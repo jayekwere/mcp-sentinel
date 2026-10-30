@@ -1,0 +1,111 @@
+
+> mcp-sentinel@1.0.0 verify
+> npm run format:check && npm run typecheck && npm test && npm run build && npm run demo
+
+
+> mcp-sentinel@1.0.0 format:check
+> prettier --check .
+
+Checking formatting...
+All matched files use Prettier code style!
+
+> mcp-sentinel@1.0.0 typecheck
+> tsc --noEmit && tsc -p tsconfig.web.json
+
+
+> mcp-sentinel@1.0.0 test
+> node --import tsx --test --test-concurrency=1 test/*.test.ts
+
+✔ HTTP boundary rejects missing tokens, untrusted hosts, cross origins, large bodies, and analyst calls (106.675583ms)
+✔ subject rate limits apply to authenticated API requests (6.278166ms)
+✔ official SDK client initializes, lists scoped tools, executes, and receives denial over HTTP (84.676291ms)
+✔ REST review and audit endpoints restrict roles and tenant records (15.225917ms)
+✔ deny by default, role and agent boundaries, tool catalog filtering (134.240584ms)
+✔ explicit deny dominates allow and approval, exact matches avoid wildcard grants (0.257375ms)
+✔ unexpected and malformed tool arguments never reach execution (9.110458ms)
+✔ approval lifecycle requires independent review and consumes exactly once (4.481875ms)
+✔ approval binding rejects changed arguments (1.37275ms)
+✔ approval binding rejects changed actor (0.600708ms)
+✔ approval binding rejects changed agent (0.547584ms)
+✔ approval binding rejects changed policy (0.634459ms)
+✔ expiry, rejection, and repeat review are enforced (1.149459ms)
+✔ concurrent approval reuse results in one execution (1.558ms)
+✔ approval consumption survives process restart (7.815541ms)
+✔ executor failure consumes approval and records failure without its exception message (1.094917ms)
+✔ pending approval queue is bounded and denial burst detection expires (5.292334ms)
+✔ aws export adapter validates its documented fields (2.054958ms)
+✔ azure export adapter validates its documented fields (0.822458ms)
+✔ gcp export adapter validates its documented fields (0.896833ms)
+✔ valid asymmetric access token maps to the server registry (15.625333ms)
+✔ token contract: issuer (3.113625ms)
+✔ token contract: audience (1.218042ms)
+✔ token contract: expired (0.75075ms)
+✔ token contract: future (1.818334ms)
+✔ token contract: lifetime (0.596542ms)
+✔ token contract: subject (0.735166ms)
+✔ token contract: type (0.633625ms)
+✔ token contract: jti (0.564458ms)
+✔ token contract: forged-role (0.583625ms)
+✔ invalid headers, unsigned payloads, and foreign signing keys fail closed (0.840125ms)
+✔ private keys and ambiguous identities are rejected at configuration (0.580875ms)
+✔ canonical request digest ignores object key order and preserves array order (0.213916ms)
+✔ rate limits include bounded key capacity and window expiry (0.133875ms)
+✔ audit detects edited content, removed middle records, and wrong keys on reopen (9.685875ms)
+✔ database transaction rolls back intent and state together (0.3985ms)
+✔ RS256 public verification and audit content-edit detection (61.699916ms)
+✔ fixed upstream enforces descriptor pin, credential separation, and no execution after metadata drift (738.837292ms)
+✔ untrusted URL shapes are rejected even for demo upstreams (0.488916ms)
+ℹ tests 39
+ℹ suites 0
+ℹ pass 39
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 5058.186333
+
+> mcp-sentinel@1.0.0 build
+> tsc && node scripts/build-web.mjs
+
+
+> mcp-sentinel@1.0.0 demo
+> node --import tsx scripts/demo.ts
+
+{
+  "unapproved": {
+    "status": 403,
+    "error": "approval_required"
+  },
+  "review": "approved by independent operator",
+  "approved": {
+    "status": 200,
+    "result": {
+      "format": "json",
+      "data": {
+        "caseId": "case-demo",
+        "classification": "synthetic",
+        "timeline": [
+          {
+            "time": "2026-01-01T00:00:00Z",
+            "action": "access-reviewed",
+            "outcome": "allowed"
+          }
+        ]
+      },
+      "contentDigest": "558089d7df863bab905ba1eaff560fe459c3f6d9eff85b95e576453fbf0783c6"
+    }
+  },
+  "replayed": {
+    "status": 403,
+    "error": "approval_required"
+  },
+  "audit": {
+    "integrity": true,
+    "entries": 12
+  },
+  "detections": [
+    "agent-denial-burst",
+    "invalid-approval-use",
+    "invalid-approval-use"
+  ]
+}

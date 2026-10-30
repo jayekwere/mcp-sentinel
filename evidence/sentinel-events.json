@@ -1,0 +1,216 @@
+[
+  {
+    "provider": "sentinel",
+    "record": {
+      "action": "approval.invalid",
+      "actor": "demo-agent",
+      "at": "2026-10-30T14:16:25.934Z",
+      "detail": {
+        "tool": "evidence.export"
+      },
+      "outcome": "denied",
+      "prev": "genesis",
+      "seq": 1,
+      "tenant": "sandbox",
+      "hash": "3a911f5a3932e962e142d394fe5c9ae518501cf59a431682aeb2971ddd82269f"
+    }
+  },
+  {
+    "provider": "sentinel",
+    "record": {
+      "action": "approval.requested",
+      "actor": "demo-agent",
+      "at": "2026-10-30T14:16:25.938Z",
+      "detail": {
+        "args": {
+          "caseId": "case-demo",
+          "format": "json"
+        },
+        "id": "bf81926a-42f6-4824-a79b-bd69cb0709a2",
+        "policy": "8d2842aa0a8f9b47d0918f7f692d3c045d81cd5f3b344490e7c489a6b5ebda3c",
+        "tool": "evidence.export"
+      },
+      "outcome": "pending",
+      "prev": "3a911f5a3932e962e142d394fe5c9ae518501cf59a431682aeb2971ddd82269f",
+      "seq": 2,
+      "tenant": "sandbox",
+      "hash": "614b8dbd1727278a46672eafe3bf06b8bdc58a5a531fb763683f78effd647f45"
+    }
+  },
+  {
+    "provider": "sentinel",
+    "record": {
+      "action": "approval.reviewed",
+      "actor": "demo-operator",
+      "at": "2026-10-30T14:16:25.940Z",
+      "detail": {
+        "id": "bf81926a-42f6-4824-a79b-bd69cb0709a2"
+      },
+      "outcome": "approved",
+      "prev": "614b8dbd1727278a46672eafe3bf06b8bdc58a5a531fb763683f78effd647f45",
+      "seq": 3,
+      "tenant": "sandbox",
+      "hash": "a22bd5c5967bc10752c226e516059683be4b710b0e5449f854890315e6922d8a"
+    }
+  },
+  {
+    "provider": "sentinel",
+    "record": {
+      "action": "approval.consumed",
+      "actor": "demo-agent",
+      "at": "2026-10-30T14:16:25.941Z",
+      "detail": {
+        "id": "bf81926a-42f6-4824-a79b-bd69cb0709a2",
+        "requestId": "d10f7e18-ca40-4556-980f-5890317a8800"
+      },
+      "outcome": "allowed",
+      "prev": "a22bd5c5967bc10752c226e516059683be4b710b0e5449f854890315e6922d8a",
+      "seq": 4,
+      "tenant": "sandbox",
+      "hash": "249d2362f522b45b2ad9c4748d64426d0ba9bedefd67bcdf955c683b86164410"
+    }
+  },
+  {
+    "provider": "sentinel",
+    "record": {
+      "action": "tool.intent",
+      "actor": "demo-agent",
+      "at": "2026-10-30T14:16:25.941Z",
+      "detail": {
+        "argsDigest": "9cbf5e203075ce1ea31cbab1a9600b88e80223d2122183bb2fdbc50c24526e3a",
+        "policy": "8d2842aa0a8f9b47d0918f7f692d3c045d81cd5f3b344490e7c489a6b5ebda3c",
+        "requestId": "d10f7e18-ca40-4556-980f-5890317a8800",
+        "rule": "export-review",
+        "tool": "evidence.export"
+      },
+      "outcome": "allowed",
+      "prev": "249d2362f522b45b2ad9c4748d64426d0ba9bedefd67bcdf955c683b86164410",
+      "seq": 5,
+      "tenant": "sandbox",
+      "hash": "00014241f527c1292f12188baf148298289f52db33ee1282fe14625d830b2158"
+    }
+  },
+  {
+    "provider": "sentinel",
+    "record": {
+      "action": "tool.completed",
+      "actor": "demo-agent",
+      "at": "2026-10-30T14:16:25.941Z",
+      "detail": {
+        "requestId": "d10f7e18-ca40-4556-980f-5890317a8800",
+        "tool": "evidence.export"
+      },
+      "outcome": "allowed",
+      "prev": "00014241f527c1292f12188baf148298289f52db33ee1282fe14625d830b2158",
+      "seq": 6,
+      "tenant": "sandbox",
+      "hash": "e1482bc2f2aaae2f06063cbc4ea1de6379c1b8dfc22c1f4ae54c7950932dbaa8"
+    }
+  },
+  {
+    "provider": "sentinel",
+    "record": {
+      "action": "approval.invalid",
+      "actor": "demo-agent",
+      "at": "2026-10-30T14:16:25.942Z",
+      "detail": {
+        "tool": "evidence.export"
+      },
+      "outcome": "denied",
+      "prev": "e1482bc2f2aaae2f06063cbc4ea1de6379c1b8dfc22c1f4ae54c7950932dbaa8",
+      "seq": 7,
+      "tenant": "sandbox",
+      "hash": "b0e620b4333243e7ad45d72c4e31f405c77bc013118003c372067390e90575db"
+    }
+  },
+  {
+    "provider": "sentinel",
+    "record": {
+      "action": "tool.denied",
+      "actor": "demo-agent",
+      "at": "2026-10-30T14:16:25.942Z",
+      "detail": {
+        "policy": "8d2842aa0a8f9b47d0918f7f692d3c045d81cd5f3b344490e7c489a6b5ebda3c",
+        "reason": "unknown_tool",
+        "tool": "admin.delete"
+      },
+      "outcome": "denied",
+      "prev": "b0e620b4333243e7ad45d72c4e31f405c77bc013118003c372067390e90575db",
+      "seq": 8,
+      "tenant": "sandbox",
+      "hash": "19ea06b8ede556dd37696e6b70d2ec7fbd0f0ce31f682b5926f9e1ee2873fc0f"
+    }
+  },
+  {
+    "provider": "sentinel",
+    "record": {
+      "action": "tool.denied",
+      "actor": "demo-agent",
+      "at": "2026-10-30T14:16:25.943Z",
+      "detail": {
+        "policy": "8d2842aa0a8f9b47d0918f7f692d3c045d81cd5f3b344490e7c489a6b5ebda3c",
+        "reason": "unknown_tool",
+        "tool": "admin.delete"
+      },
+      "outcome": "denied",
+      "prev": "19ea06b8ede556dd37696e6b70d2ec7fbd0f0ce31f682b5926f9e1ee2873fc0f",
+      "seq": 9,
+      "tenant": "sandbox",
+      "hash": "c29a33c3e00e52b5b1f9098b1e33a816b0a6e0819c57116f9ea0d91bdb34f9eb"
+    }
+  },
+  {
+    "provider": "sentinel",
+    "record": {
+      "action": "tool.denied",
+      "actor": "demo-agent",
+      "at": "2026-10-30T14:16:25.944Z",
+      "detail": {
+        "policy": "8d2842aa0a8f9b47d0918f7f692d3c045d81cd5f3b344490e7c489a6b5ebda3c",
+        "reason": "unknown_tool",
+        "tool": "admin.delete"
+      },
+      "outcome": "denied",
+      "prev": "c29a33c3e00e52b5b1f9098b1e33a816b0a6e0819c57116f9ea0d91bdb34f9eb",
+      "seq": 10,
+      "tenant": "sandbox",
+      "hash": "33d541c8e5938a36032ece2b561ae21eef4a5bbdee90460ccd7266d0763e3051"
+    }
+  },
+  {
+    "provider": "sentinel",
+    "record": {
+      "action": "tool.denied",
+      "actor": "demo-agent",
+      "at": "2026-10-30T14:16:25.944Z",
+      "detail": {
+        "policy": "8d2842aa0a8f9b47d0918f7f692d3c045d81cd5f3b344490e7c489a6b5ebda3c",
+        "reason": "unknown_tool",
+        "tool": "admin.delete"
+      },
+      "outcome": "denied",
+      "prev": "33d541c8e5938a36032ece2b561ae21eef4a5bbdee90460ccd7266d0763e3051",
+      "seq": 11,
+      "tenant": "sandbox",
+      "hash": "924ce609ef006de60f6ac86d5e2deab0494f0e5d5a0564224e13b7b2f01ab4f5"
+    }
+  },
+  {
+    "provider": "sentinel",
+    "record": {
+      "action": "tool.denied",
+      "actor": "demo-agent",
+      "at": "2026-10-30T14:16:25.945Z",
+      "detail": {
+        "policy": "8d2842aa0a8f9b47d0918f7f692d3c045d81cd5f3b344490e7c489a6b5ebda3c",
+        "reason": "unknown_tool",
+        "tool": "admin.delete"
+      },
+      "outcome": "denied",
+      "prev": "924ce609ef006de60f6ac86d5e2deab0494f0e5d5a0564224e13b7b2f01ab4f5",
+      "seq": 12,
+      "tenant": "sandbox",
+      "hash": "58b695fbc3c4eff43de5a9f8fa0249d6759ce65087e37a177672099b68d0d0c9"
+    }
+  }
+]

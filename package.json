@@ -1,0 +1,38 @@
+{
+  "name": "mcp-sentinel",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=24.13.0 <27"
+  },
+  "scripts": {
+    "build": "tsc && node scripts/build-web.mjs",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.web.json",
+    "test": "node --import tsx --test --test-concurrency=1 test/*.test.ts",
+    "test:coverage": "node --experimental-test-coverage --import tsx --test --test-concurrency=1 test/*.test.ts",
+    "test:browser": "playwright test",
+    "start": "node dist/src/main.js",
+    "dev": "node --import tsx src/main.ts",
+    "demo": "node --import tsx scripts/demo.ts",
+    "verify": "npm run format:check && npm run typecheck && npm test && npm run build && npm run demo",
+    "test:container": "node scripts/container-smoke.mjs",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.32.2",
+    "fastify": "5.12.7",
+    "jose": "6.2.14",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.64.1",
+    "@types/node": "24.10.1",
+    "esbuild": "0.28.2",
+    "prettier": "3.9.10",
+    "tsx": "4.23.15",
+    "typescript": "7.0.2"
+  }
+}

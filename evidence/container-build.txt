@@ -1,0 +1,140 @@
+#0 building with "desktop-linux" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 987B 0.0s done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/library/node:24-alpine@sha256:8a32c8cf649a49915a66e81e7a609223c708d0adabf288ee3f4077d765542f85
+#2 DONE 0.1s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 125B 0.0s done
+#3 DONE 0.0s
+
+#4 [build 1/7] FROM docker.io/library/node:24-alpine@sha256:8a32c8cf649a49915a66e81e7a609223c708d0adabf288ee3f4077d765542f85
+#4 resolve docker.io/library/node:24-alpine@sha256:8a32c8cf649a49915a66e81e7a609223c708d0adabf288ee3f4077d765542f85 0.0s done
+#4 DONE 0.0s
+
+#5 [internal] load build context
+#5 transferring context: 304.67kB 0.1s done
+#5 DONE 0.1s
+
+#6 [build 2/7] WORKDIR /app
+#6 CACHED
+
+#7 [build 3/7] COPY package.json package-lock.json ./
+#7 DONE 0.1s
+
+#8 [build 4/7] RUN npm ci --ignore-scripts
+#8 9.956
+#8 9.956 added 149 packages, and audited 150 packages in 5s
+#8 9.956
+#8 9.956 54 packages are looking for funding
+#8 9.956   run `npm fund` for details
+#8 9.957
+#8 9.957 found 0 vulnerabilities
+#8 9.958 npm notice
+#8 9.958 npm notice New major version of npm available! 11.19.1 -> 12.2.1
+#8 9.958 npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+#8 9.958 npm notice To update run: npm install -g npm@12.2.1
+#8 9.958 npm notice
+#8 DONE 10.2s
+
+#9 [build 5/7] COPY . .
+#9 DONE 0.2s
+
+#10 [build 6/7] RUN npm run typecheck && npm test && npm run build
+#10 0.327
+#10 0.327 > mcp-sentinel@1.0.0 typecheck
+#10 0.327 > tsc --noEmit && tsc -p tsconfig.web.json
+#10 0.327
+#10 1.866
+#10 1.866 > mcp-sentinel@1.0.0 test
+#10 1.866 > node --import tsx --test --test-concurrency=1 test/*.test.ts
+#10 1.866
+#10 2.503 ✔ HTTP boundary rejects missing tokens, untrusted hosts, cross origins, large bodies, and analyst calls (89.797875ms)
+#10 2.511 ✔ subject rate limits apply to authenticated API requests (8.074625ms)
+#10 2.640 ✔ official SDK client initializes, lists scoped tools, executes, and receives denial over HTTP (128.478667ms)
+#10 2.661 ✔ REST review and audit endpoints restrict roles and tenant records (21.312208ms)
+#10 3.099 ✔ deny by default, role and agent boundaries, tool catalog filtering (14.047625ms)
+#10 3.099 ✔ explicit deny dominates allow and approval, exact matches avoid wildcard grants (0.302709ms)
+#10 3.101 ✔ unexpected and malformed tool arguments never reach execution (2.612833ms)
+#10 3.103 ✔ approval lifecycle requires independent review and consumes exactly once (4.693792ms)
+#10 3.103 ✔ approval binding rejects changed arguments (2.010042ms)
+#10 3.103 ✔ approval binding rejects changed actor (1.126209ms)
+#10 3.103 ✔ approval binding rejects changed agent (1.399875ms)
+#10 3.104 ✔ approval binding rejects changed policy (1.701791ms)
+#10 3.104 ✔ expiry, rejection, and repeat review are enforced (3.551375ms)
+#10 3.104 ✔ concurrent approval reuse results in one execution (4.233292ms)
+#10 3.105 ✔ approval consumption survives process restart (47.165542ms)
+#10 3.105 ✔ executor failure consumes approval and records failure without its exception message (2.86775ms)
+#10 3.105 ✔ pending approval queue is bounded and denial burst detection expires (11.979459ms)
+#10 3.106 ✔ aws export adapter validates its documented fields (1.992917ms)
+#10 3.106 ✔ azure export adapter validates its documented fields (0.900958ms)
+#10 3.107 ✔ gcp export adapter validates its documented fields (1.091625ms)
+#10 3.383 ✔ valid asymmetric access token maps to the server registry (21.133833ms)
+#10 3.384 ✔ token contract: issuer (1.808666ms)
+#10 3.385 ✔ token contract: audience (0.973208ms)
+#10 3.386 ✔ token contract: expired (1.077375ms)
+#10 3.387 ✔ token contract: future (0.941167ms)
+#10 3.388 ✔ token contract: lifetime (0.796833ms)
+#10 3.389 ✔ token contract: subject (0.693667ms)
+#10 3.390 ✔ token contract: type (0.81925ms)
+#10 3.392 ✔ token contract: jti (1.085958ms)
+#10 3.393 ✔ token contract: forged-role (1.34ms)
+#10 3.395 ✔ invalid headers, unsigned payloads, and foreign signing keys fail closed (1.874833ms)
+#10 3.419 ✔ private keys and ambiguous identities are rejected at configuration (0.918ms)
+#10 3.419 ✔ canonical request digest ignores object key order and preserves array order (0.381833ms)
+#10 3.419 ✔ rate limits include bounded key capacity and window expiry (0.173834ms)
+#10 3.419 ✔ audit detects edited content, removed middle records, and wrong keys on reopen (19.912916ms)
+#10 3.419 ✔ database transaction rolls back intent and state together (1.046458ms)
+#10 3.446 ✔ RS256 public verification and audit content-edit detection (28.320958ms)
+#10 4.070 ✔ fixed upstream enforces descriptor pin, credential separation, and no execution after metadata drift (150.6125ms)
+#10 4.070 ✔ untrusted URL shapes are rejected even for demo upstreams (0.504125ms)
+#10 4.096 ℹ tests 39
+#10 4.096 ℹ suites 0
+#10 4.096 ℹ pass 39
+#10 4.096 ℹ fail 0
+#10 4.096 ℹ cancelled 0
+#10 4.096 ℹ skipped 0
+#10 4.096 ℹ todo 0
+#10 4.096 ℹ duration_ms 2203.065584
+#10 4.206
+#10 4.206 > mcp-sentinel@1.0.0 build
+#10 4.206 > tsc && node scripts/build-web.mjs
+#10 4.206
+#10 DONE 4.7s
+
+#11 [build 7/7] RUN npm prune --omit=dev --ignore-scripts
+#11 2.621
+#11 2.621 removed 11 packages, and audited 139 packages in 2s
+#11 2.621
+#11 2.622 53 packages are looking for funding
+#11 2.622   run `npm fund` for details
+#11 2.622
+#11 2.622 found 0 vulnerabilities
+#11 DONE 2.6s
+
+#12 [runtime 3/6] COPY --from=build /app/node_modules ./node_modules
+#12 CACHED
+
+#13 [runtime 4/6] COPY --from=build /app/package.json /app/package-lock.json ./
+#13 DONE 0.0s
+
+#14 [runtime 5/6] COPY --from=build /app/dist/src ./dist/src
+#14 DONE 0.0s
+
+#15 [runtime 6/6] COPY --from=build /app/dist/web ./dist/web
+#15 DONE 0.0s
+
+#16 exporting to image
+#16 exporting layers 0.1s done
+#16 exporting manifest sha256:4b02efb4055776747f8234b5d53b2aa90c4e7decb6a07ea61c8c5e80322b05c9 0.0s done
+#16 exporting config sha256:075b201359c7b0d03198f93b42e53e086bc494730a1113ce2c9a26a987298215 done
+#16 exporting attestation manifest sha256:e8864fdd397522b4851acc48c93194283e10305c8c4a079385091c74393c8ab9
+#16 exporting attestation manifest sha256:e8864fdd397522b4851acc48c93194283e10305c8c4a079385091c74393c8ab9 0.0s done
+#16 exporting manifest list sha256:e315b6b1a4daff2a76e3e70b9b662cc6de38214d9da892b2b9236cfa4270c861 done
+#16 naming to docker.io/library/mcp-sentinel:local done
+#16 unpacking to docker.io/library/mcp-sentinel:local
+#16 unpacking to docker.io/library/mcp-sentinel:local 0.2s done
+#16 DONE 0.4s

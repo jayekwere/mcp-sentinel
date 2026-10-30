@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="/style.css" />
+    <script type="module" src="/app.js"></script>
+    <title>MCP Sentinel | Agent security</title>
+  </head>
+  <body>
+    <div class="shell">
+      <aside class="sidebar">
+        <div class="brand"><span class="mark">◇</span>MCP Sentinel</div>
+        <div>
+          <p class="overline">Security workspace</p>
+          <nav class="nav">
+            <a class="active" href="#overview">◈ &nbsp; Overview</a
+            ><a href="#activity">◎ &nbsp; Decision ledger</a
+            ><a href="#playground">⌘ &nbsp; Tool playground</a
+            ><a href="#approvals">▣ &nbsp; Approval queue</a>
+          </nav>
+        </div>
+        <div class="side-note">
+          <span class="dot"></span> Enforce at the boundary<br />Every call. Every agent.<br /><br />v1.0.0
+          · Local control plane
+        </div>
+      </aside>
+      <div class="workspace">
+        <header class="topbar">
+          <div class="crumb">Workspace / <b>Agent security</b></div>
+          <div class="connection">
+            <label for="token">Access token</label
+            ><input
+              id="token"
+              type="password"
+              placeholder="Paste your access token"
+              autocomplete="off"
+              aria-label="Access token"
+            /><button id="connect">Connect</button
+            ><span id="status" class="status" role="status">Disconnected</span>
+          </div>
+        </header>
+        <main class="main" id="overview">
+          <div class="heading">
+            <div>
+              <span class="overline">Trust is a decision, every time</span>
+              <h1>Agent security overview</h1>
+              <p>Control tool access. Review privileged actions. Follow the evidence.</p>
+            </div>
+            <button id="refresh" class="ghost">↻ Refresh</button>
+          </div>
+          <div id="notice" class="notice" role="status">
+            Connect an operator or analyst token to inspect activity. Use an agent token in the
+            playground.
+          </div>
+          <section class="stats" aria-label="Security metrics">
+            <article class="stat">
+              <div class="stat-top">Allowed calls <span class="stat-icon">↗</span></div>
+              <b class="value" id="allowed">0</b><small>Completed tool executions</small>
+            </article>
+            <article class="stat">
+              <div class="stat-top">Denied actions <span class="stat-icon">⊘</span></div>
+              <b class="value" id="denied">0</b><small>Access and approval rejections</small>
+            </article>
+            <article class="stat">
+              <div class="stat-top">Awaiting review <span class="stat-icon">◷</span></div>
+              <b class="value" id="pending">0</b><small>Independent approval required</small>
+            </article>
+            <article class="stat">
+              <div class="stat-top">Detection signals <span class="stat-icon">⌁</span></div>
+              <b class="value" id="signals">0</b><small>Within the last 60 seconds</small>
+            </article>
+          </section>
+          <div class="grid">
+            <div>
+              <section class="panel">
+                <div class="panel-head">
+                  <h2>The enforcement path</h2>
+                  <span class="badge">Deny by default</span>
+                </div>
+                <div class="pipeline">
+                  <div class="stage"><b>◉</b>Verify identity</div>
+                  <span class="arrow">→</span>
+                  <div class="stage"><b>⌘</b>Evaluate policy</div>
+                  <span class="arrow">→</span>
+                  <div class="stage"><b>✓</b>Check approval</div>
+                  <span class="arrow">→</span>
+                  <div class="stage"><b>↗</b>Execute tool</div>
+                  <span class="arrow">→</span>
+                  <div class="stage"><b>▤</b>Record evidence</div>
+                </div>
+              </section>
+              <section class="panel" id="activity">
+                <div class="panel-head">
+                  <div>
+                    <h2>Decision ledger</h2>
+                    <p class="subtle">Recent activity in your tenant</p>
+                  </div>
+                  <span id="integrity" class="badge">Awaiting connection</span>
+                </div>
+                <div class="table-wrap">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Time</th>
+                        <th>Actor / Action</th>
+                        <th>Outcome</th>
+                        <th>Evidence</th>
+                      </tr>
+                    </thead>
+                    <tbody id="events"></tbody>
+                  </table>
+                  <div id="events-empty" class="empty">
+                    Activity appears here after the first request.
+                  </div>
+                </div>
+              </section>
+              <section class="panel" id="approvals">
+                <div class="panel-head">
+                  <h2>Independent review</h2>
+                  <span class="subtle">Operator access</span>
+                </div>
+                <div id="approval-list" class="empty">
+                  Connect an operator token to review requests.
+                </div>
+              </section>
+            </div>
+            <div>
+              <section class="panel">
+                <div class="panel-head">
+                  <h2>Detection signals</h2>
+                  <span class="badge warn">Explainable rules</span>
+                </div>
+                <div id="detections" class="empty">No signals loaded.</div>
+              </section>
+              <section class="panel" id="playground">
+                <div class="panel-head">
+                  <h2>Tool playground</h2>
+                  <span class="badge">Live enforcement</span>
+                </div>
+                <div class="panel-body">
+                  <p>
+                    Use an agent token to submit a request. Privileged exports require a separate
+                    reviewer.
+                  </p>
+                  <label for="agent-token">Agent access token</label
+                  ><input
+                    id="agent-token"
+                    type="password"
+                    class="inline-input"
+                    placeholder="Paste agent token"
+                    autocomplete="off"
+                  /><label for="tool">Protected tool</label
+                  ><select id="tool" class="inline-input">
+                    <option>knowledge.search</option>
+                    <option>cloud.audit.summary</option>
+                    <option>evidence.export</option>
+                    <option>admin.delete</option></select
+                  ><label for="arguments">Arguments</label
+                  ><textarea id="arguments" spellcheck="false">{"query":"approval"}</textarea
+                  ><label for="approval-id">Approval ID, when granted</label
+                  ><input
+                    id="approval-id"
+                    class="inline-input"
+                    placeholder="One-time approval ID"
+                    autocomplete="off"
+                  />
+                  <div class="toolbar">
+                    <button id="execute" class="primary">Execute request ↗</button
+                    ><button id="request-approval">Request approval</button>
+                  </div>
+                  <pre id="output" class="output" aria-live="polite">Ready for a request.</pre>
+                </div>
+              </section>
+              <section class="panel">
+                <div class="panel-head">
+                  <h2>Active policy</h2>
+                  <span class="badge">Versioned</span>
+                </div>
+                <div class="panel-body">
+                  <div class="metric-row">
+                    <span>Policy version</span><b id="policy-version">Awaiting connection</b>
+                  </div>
+                  <div class="metric-row"><span>Rule count</span><b id="rule-count">0</b></div>
+                  <p class="subtle mono" id="policy-hash">
+                    Policy fingerprint appears after connection.
+                  </p>
+                </div>
+              </section>
+            </div>
+          </div>
+          <div class="footer">
+            <span>Local workspace · Synthetic demonstrations</span
+            ><span>No telemetry · Evidence you can inspect</span>
+          </div>
+        </main>
+      </div>
+    </div>
+  </body>
+</html>

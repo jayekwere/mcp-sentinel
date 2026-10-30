@@ -1,0 +1,69 @@
+
+> mcp-sentinel@1.0.0 test:coverage
+> node --experimental-test-coverage --import tsx --test --test-concurrency=1 test/*.test.ts
+
+✔ HTTP boundary rejects missing tokens, untrusted hosts, cross origins, large bodies, and analyst calls (82.729916ms)
+✔ subject rate limits apply to authenticated API requests (4.542083ms)
+✔ official SDK client initializes, lists scoped tools, executes, and receives denial over HTTP (90.864083ms)
+✔ REST review and audit endpoints restrict roles and tenant records (14.64975ms)
+✔ deny by default, role and agent boundaries, tool catalog filtering (9.324208ms)
+✔ explicit deny dominates allow and approval, exact matches avoid wildcard grants (0.142375ms)
+✔ unexpected and malformed tool arguments never reach execution (1.492667ms)
+✔ approval lifecycle requires independent review and consumes exactly once (3.494333ms)
+✔ approval binding rejects changed arguments (1.396958ms)
+✔ approval binding rejects changed actor (0.859791ms)
+✔ approval binding rejects changed agent (0.677834ms)
+✔ approval binding rejects changed policy (0.709542ms)
+✔ expiry, rejection, and repeat review are enforced (1.308833ms)
+✔ concurrent approval reuse results in one execution (3.115416ms)
+✔ approval consumption survives process restart (13.818833ms)
+✔ executor failure consumes approval and records failure without its exception message (1.430583ms)
+✔ pending approval queue is bounded and denial burst detection expires (6.048958ms)
+✔ aws export adapter validates its documented fields (1.325042ms)
+✔ azure export adapter validates its documented fields (0.636125ms)
+✔ gcp export adapter validates its documented fields (0.548209ms)
+✔ valid asymmetric access token maps to the server registry (11.966333ms)
+✔ token contract: issuer (1.931875ms)
+✔ token contract: audience (0.785792ms)
+✔ token contract: expired (0.715209ms)
+✔ token contract: future (0.612208ms)
+✔ token contract: lifetime (0.518833ms)
+✔ token contract: subject (0.416625ms)
+✔ token contract: type (0.367959ms)
+✔ token contract: jti (0.392ms)
+✔ token contract: forged-role (0.469333ms)
+✔ invalid headers, unsigned payloads, and foreign signing keys fail closed (0.972458ms)
+✔ private keys and ambiguous identities are rejected at configuration (0.643583ms)
+✔ canonical request digest ignores object key order and preserves array order (0.259834ms)
+✔ rate limits include bounded key capacity and window expiry (0.174ms)
+✔ audit detects edited content, removed middle records, and wrong keys on reopen (7.503375ms)
+✔ database transaction rolls back intent and state together (0.380625ms)
+✔ RS256 public verification and audit content-edit detection (34.111ms)
+✔ fixed upstream enforces descriptor pin, credential separation, and no execution after metadata drift (141.014958ms)
+✔ untrusted URL shapes are rejected even for demo upstreams (0.354458ms)
+ℹ tests 39
+ℹ suites 0
+ℹ pass 39
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3001.868167
+ℹ start of coverage report
+ℹ -------------------------------------------------------------
+ℹ file         | line % | branch % | funcs % | uncovered lines
+ℹ -------------------------------------------------------------
+ℹ src          |        |          |         |
+ℹ  app.ts      |  94.12 |   100.00 |   60.00 | 17-18 21-22
+ℹ  gateway.ts  |  98.18 |    94.29 |   93.10 | 60 145 148-149
+ℹ  http.ts     |  90.91 |    88.89 |   80.00 | 36-37 60-65 67
+ℹ  mcp.ts      | 100.00 |    88.24 |  100.00 |
+ℹ  policy.ts   | 100.00 |   100.00 |  100.00 |
+ℹ  security.ts | 100.00 |    96.49 |  100.00 |
+ℹ  store.ts    |  97.30 |    92.59 |  100.00 | 17-19
+ℹ  tools.ts    | 100.00 |    94.74 |  100.00 |
+ℹ  upstream.ts |  97.50 |    70.59 |  100.00 | 76-77 79
+ℹ -------------------------------------------------------------
+ℹ all files    |  97.68 |    91.27 |   93.04 |
+ℹ -------------------------------------------------------------
+ℹ end of coverage report

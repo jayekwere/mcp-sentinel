@@ -1,0 +1,15 @@
+services:
+  mcp-sentinel:
+    build: .
+    ports:
+      - '127.0.0.1:4310:4310'
+    environment:
+      DEMO: '1'
+      BASE_URL: 'http://127.0.0.1:4310'
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    tmpfs: ['/tmp:size=16m,mode=1777']
+    pids_limit: 128
+    mem_limit: 512m
+    cpus: 1
