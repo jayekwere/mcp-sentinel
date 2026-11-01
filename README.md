@@ -116,3 +116,7 @@ This is a single-node reference service with production-style controls, not a ce
 The upstream adapter maps only the three declared local tools; it is not a transparent proxy for arbitrary MCP servers. Descriptor pins do not prove a server's runtime behavior. Output is untrusted data and is not scanned for every prompt-injection or exfiltration pattern. Pinned descriptions prevent unnoticed metadata drift, not malicious behavior behind unchanged metadata. Network egress policy belongs at the deployment boundary.
 
 See [SECURITY.md](SECURITY.md) for reporting and [CONTRIBUTING.md](CONTRIBUTING.md) for changes. Licensed under [MIT](LICENSE).
+
+---
+
+**AI assistance:** AI tools helped with code or documentation.
