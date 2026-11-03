@@ -543,3 +543,23 @@ test('rolls back standalone audit side effects and supports an existing transact
     store.close();
   }
 });
+
+test('overview pending total is an integer', async () => {
+  const demo = await demoAuth('mcp-sentinel');
+  const store = new Store(':memory:', key);
+  const { app, gateway } = createApp({ auth: demo.auth, store, baseUrl: 'http://127.0.0.1:4310' });
+  try {
+    gateway.request(demo.auth.config.identities[0]!, {
+      tool: 'evidence.export',
+      arguments: { caseId: 'case-test', format: 'json' },
+    });
+    const response = await app.inject({
+      url: '/api/overview',
+      headers: { host: '127.0.0.1:4310', authorization: 'Bearer ' + demo.tokens.operator },
+    });
+    assert.equal(response.json().totals.pending, 1);
+  } finally {
+    await app.close();
+    store.close();
+  }
+});

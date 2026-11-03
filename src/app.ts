@@ -93,11 +93,13 @@ export function createApp(options: {
       totals: {
         allowed: events.filter((e) => e.action === 'tool.completed').length,
         denied: events.filter((e) => e.outcome === 'denied').length,
-        pending: gateway.store.db
-          .prepare(
-            "SELECT count(*) AS n FROM approvals WHERE tenant=? AND status='pending' AND expires>?",
-          )
-          .get(req.identity.tenant, Date.now()),
+        pending: (
+          gateway.store.db
+            .prepare(
+              "SELECT count(*) AS n FROM approvals WHERE tenant=? AND status='pending' AND expires>?",
+            )
+            .get(req.identity.tenant, Date.now()) as { n: number }
+        ).n,
       },
     };
   });

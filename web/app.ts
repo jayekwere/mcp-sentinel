@@ -38,7 +38,7 @@ function cell(row: HTMLElement, text: string, cls = '') {
 async function refresh() {
   const data = await api('/api/overview');
   for (const key of ['allowed', 'denied']) $(key).textContent = String(data.totals[key]);
-  $('pending').textContent = String(data.totals.pending.n);
+  $('pending').textContent = String(data.totals.pending);
   $('signals').textContent = String(data.detections.length);
   $('policy-version').textContent = data.policy.version;
   $('rule-count').textContent = String(data.policy.rules);
