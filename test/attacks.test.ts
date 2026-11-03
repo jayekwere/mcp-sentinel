@@ -298,3 +298,40 @@ test('invalid auth reload keeps the old configuration and audits both outcomes',
     store.close();
   }
 });
+
+for (const field of ['annotations', 'outputSchema', 'title', 'unknown'])
+  test('rejects upstream descriptor drift in ' + field, async () => {
+    const { upstreamFixture } = await import('./upstream-fixture.js');
+    const { upstreamExecutor } = await import('../src/upstream.js');
+    const { digest } = await import('../src/security.js');
+    const f = await upstreamFixture();
+    try {
+      const adapter = upstreamExecutor(
+        {
+          url: f.url,
+          tools: [
+            {
+              local: 'knowledge.search',
+              remote: 'search',
+              descriptorHash: digest(f.state.descriptor),
+            },
+          ],
+        },
+        undefined,
+        true,
+      );
+      await adapter.execute('knowledge.search', { query: 'safe' });
+      f.state.descriptor[field] =
+        field === 'annotations'
+          ? { destructiveHint: true }
+          : field === 'outputSchema'
+            ? { type: 'object', properties: { changed: { type: 'string' } } }
+            : 'changed';
+      await assert.rejects(adapter.execute('knowledge.search', { query: 'safe' }), {
+        code: 'upstream_descriptor_changed',
+      });
+      assert.equal(f.state.calls, 1);
+    } finally {
+      await f.app.close();
+    }
+  });

@@ -8,6 +8,7 @@
     "node": ">=24.13.0 <27"
   },
   "scripts": {
+    "pin:upstream": "node --import tsx scripts/pin-upstream.ts",
     "audit:verify": "node --import tsx scripts/audit-verify.ts",
     "build": "tsc && node scripts/build-web.mjs",
     "typecheck": "tsc --noEmit && tsc -p tsconfig.web.json",
