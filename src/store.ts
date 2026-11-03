@@ -31,6 +31,7 @@ export class Store {
     this.db.exec(`PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000;
       CREATE TABLE IF NOT EXISTS audit(seq INTEGER PRIMARY KEY, body TEXT NOT NULL, hash TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS approvals(id TEXT PRIMARY KEY, tenant TEXT NOT NULL, subject TEXT NOT NULL, binding TEXT NOT NULL, expires INTEGER NOT NULL, status TEXT NOT NULL, reviewer TEXT);
+      CREATE TABLE IF NOT EXISTS revocations(tenant TEXT NOT NULL, kind TEXT NOT NULL, value TEXT NOT NULL, subject TEXT NOT NULL, expires INTEGER NOT NULL, PRIMARY KEY(tenant,kind,value,subject));
       CREATE TABLE IF NOT EXISTS runs(id TEXT PRIMARY KEY, tenant TEXT NOT NULL, body TEXT NOT NULL);
     `);
     const columns = this.db.prepare('PRAGMA table_info(approvals)').all() as { name: string }[];
@@ -130,6 +131,13 @@ export class Store {
       hash: r.hash,
       detail: argumentPreview(JSON.parse(r.body).detail),
     }));
+  }
+  revoked(tenant: string, subject: string, jti: string): boolean {
+    return !!this.db
+      .prepare(
+        "SELECT 1 FROM revocations WHERE tenant=? AND subject=? AND expires>? AND ((kind='jti' AND value=?) OR kind='subject') LIMIT 1",
+      )
+      .get(tenant, subject, this.now(), jti);
   }
   close() {
     this.db.close();

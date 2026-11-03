@@ -17,6 +17,7 @@ export function secureApp(
   webRoot = resolve('dist/web'),
   limit = 120,
 ) {
+  auth.isRevoked = (tenant, subject, jti) => store.revoked(tenant, subject, jti);
   const base = new URL(baseUrl);
   const app = Fastify({
     logger: false,

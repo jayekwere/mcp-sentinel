@@ -126,3 +126,175 @@ test('prevents blind approval of custom cloud summary policy and binds every arg
     store.close();
   }
 });
+
+test('rejects revoked token jti and revoked subject without making tokens one time use', async () => {
+  const { decodeJwt } = await import('jose');
+  const demo = await demoAuth('mcp-sentinel');
+  const store = new Store(':memory:', key);
+  const { app } = createApp({ auth: demo.auth, store, baseUrl: 'http://127.0.0.1:4310' });
+  const h = (role: string) => ({
+    host: '127.0.0.1:4310',
+    authorization: 'Bearer ' + demo.tokens[role],
+  });
+  try {
+    for (let i = 0; i < 2; i++)
+      assert.equal((await app.inject({ url: '/api/me', headers: h('agent') })).statusCode, 200);
+    const revoke = async (body: unknown, role = 'operator') =>
+      app.inject({
+        method: 'POST',
+        url: '/api/revocations',
+        headers: h(role),
+        payload: body as object,
+      });
+    assert.equal(
+      (
+        await revoke({
+          kind: 'jti',
+          value: decodeJwt(demo.tokens.agent!).jti,
+          subject: 'demo-agent',
+          expiresAt: new Date(Date.now() + 60000).toISOString(),
+        })
+      ).statusCode,
+      201,
+    );
+    assert.equal(
+      (await app.inject({ url: '/api/me', headers: h('agent') })).json().error,
+      'invalid_token',
+    );
+    assert.equal(
+      (
+        await revoke({
+          kind: 'subject',
+          value: 'demo-analyst',
+          subject: 'demo-analyst',
+          expiresAt: new Date(Date.now() + 60000).toISOString(),
+        })
+      ).statusCode,
+      201,
+    );
+    assert.equal((await app.inject({ url: '/api/me', headers: h('analyst') })).statusCode, 401);
+    assert.equal(
+      (
+        await revoke({
+          kind: 'subject',
+          value: 'other-tenant',
+          subject: 'other-tenant',
+          expiresAt: new Date(Date.now() + 60000).toISOString(),
+        })
+      ).statusCode,
+      403,
+    );
+    assert.equal(
+      (
+        await revoke({
+          kind: 'subject',
+          value: 'demo-operator',
+          subject: 'demo-operator',
+          expiresAt: new Date(Date.now() + 60000).toISOString(),
+          extra: true,
+        })
+      ).statusCode,
+      400,
+    );
+    assert.equal(store.audits('sandbox').filter((e) => e.action === 'identity.revoked').length, 2);
+  } finally {
+    await app.close();
+    store.close();
+  }
+});
+test('revokes every accepted token ID including IDs longer than 200 characters', async () => {
+  const { SignJWT } = await import('jose');
+  const demo = await demoAuth('mcp-sentinel');
+  const jti = 'synthetic-' + 'x'.repeat(201);
+  const token = await new SignJWT({})
+    .setProtectedHeader({ alg: 'ES256', typ: 'at+jwt', kid: 'ephemeral-demo' })
+    .setIssuer(demo.auth.config.issuer)
+    .setAudience('mcp-sentinel')
+    .setSubject('demo-agent')
+    .setJti(jti)
+    .setIssuedAt()
+    .setExpirationTime('1m')
+    .sign(demo.privateKey);
+  const store = new Store(':memory:', key);
+  const { app } = createApp({ auth: demo.auth, store, baseUrl: 'http://127.0.0.1:4310' });
+  const headers = { host: '127.0.0.1:4310', authorization: 'Bearer ' + token };
+  try {
+    assert.equal((await app.inject({ url: '/api/me', headers })).statusCode, 200);
+    assert.equal(
+      (
+        await app.inject({
+          method: 'POST',
+          url: '/api/revocations',
+          headers: { ...headers, authorization: 'Bearer ' + demo.tokens.operator },
+          payload: {
+            kind: 'jti',
+            value: jti,
+            subject: 'demo-agent',
+            expiresAt: new Date(Date.now() + 60000).toISOString(),
+          },
+        })
+      ).statusCode,
+      201,
+    );
+    assert.equal((await app.inject({ url: '/api/me', headers })).json().error, 'invalid_token');
+  } finally {
+    await app.close();
+    store.close();
+  }
+});
+
+test('rejects unusable verification keys on auth reload', async () => {
+  const { reloadAuth } = await import('../src/config.js');
+  const demo = await demoAuth('mcp-sentinel');
+  const original = structuredClone(demo.auth.config);
+  const store = new Store(':memory:', key);
+  try {
+    for (const change of [{ use: 'enc' }, { key_ops: ['sign'] }, { key_ops: [] }, { alg: '' }]) {
+      const input = { ...original, jwks: { keys: [{ ...original.jwks.keys[0]!, ...change }] } };
+      assert.equal(reloadAuth(demo.auth, store, input, 'mcp-sentinel'), false);
+      assert.equal((await demo.auth.verify('Bearer ' + demo.tokens.agent)).subject, 'demo-agent');
+    }
+    assert.equal(store.audits('system').filter((e) => e.outcome === 'denied').length, 4);
+  } finally {
+    store.close();
+  }
+});
+
+test('invalid auth reload keeps the old configuration and audits both outcomes', async () => {
+  const { reloadAuth } = await import('../src/config.js');
+  const demo = await demoAuth('mcp-sentinel');
+  const store = new Store(':memory:', key);
+  try {
+    assert.equal(
+      reloadAuth(
+        demo.auth,
+        store,
+        { ...demo.auth.config, jwks: { keys: [{ kty: 'EC' }] } },
+        'mcp-sentinel',
+      ),
+      false,
+    );
+    assert.equal((await demo.auth.verify('Bearer ' + demo.tokens.agent)).subject, 'demo-agent');
+    assert.equal(
+      reloadAuth(
+        demo.auth,
+        store,
+        {
+          ...demo.auth.config,
+          identities: demo.auth.config.identities.filter((i) => i.subject !== 'demo-agent'),
+        },
+        'mcp-sentinel',
+      ),
+      true,
+    );
+    await assert.rejects(demo.auth.verify('Bearer ' + demo.tokens.agent), {
+      code: 'invalid_token',
+    });
+    assert.deepEqual(
+      store.audits('system').map((e) => e.outcome),
+      ['allowed', 'denied'],
+    );
+  } finally {
+    store.close();
+  }
+});

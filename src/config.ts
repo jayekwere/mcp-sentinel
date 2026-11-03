@@ -36,3 +36,26 @@ export async function config(name: string, port: number) {
     demo,
   };
 }
+
+export function reloadAuth(
+  auth: Auth,
+  store: import('./store.js').Store,
+  input: AuthConfig,
+  audience: string,
+): boolean {
+  try {
+    if (input.audience !== audience) throw new Error('Audience changed');
+    const validated = new Auth(input);
+    store.transaction(() => {
+      store.db.exec(
+        "UPDATE approvals SET status='invalidated' WHERE status IN ('pending','approved')",
+      );
+      store.audit('system', 'operator', 'authentication.reloaded', 'allowed');
+    });
+    auth.reload(validated.config);
+    return true;
+  } catch {
+    store.audit('system', 'operator', 'authentication.reloaded', 'denied');
+    return false;
+  }
+}

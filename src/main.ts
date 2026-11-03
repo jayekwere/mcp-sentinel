@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { config } from './config.js';
+import { config, reloadAuth } from './config.js';
 import { Store } from './store.js';
 import { createApp } from './app.js';
 import { upstreamExecutor } from './upstream.js';
@@ -34,3 +34,17 @@ for (const signal of ['SIGINT', 'SIGTERM'] as const)
       process.exit(0);
     });
   });
+
+process.on('SIGHUP', () => {
+  try {
+    if (!process.env.AUTH_CONFIG) throw new Error('AUTH_CONFIG required');
+    reloadAuth(
+      c.auth,
+      store,
+      JSON.parse(readFileSync(process.env.AUTH_CONFIG, 'utf8')),
+      c.auth.config.audience,
+    );
+  } catch {
+    store.audit('system', 'operator', 'authentication.reloaded', 'denied');
+  }
+});
