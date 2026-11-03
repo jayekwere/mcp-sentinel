@@ -563,3 +563,51 @@ test('overview pending total is an integer', async () => {
     store.close();
   }
 });
+
+for (const attack of ['tail rollback', 'forged signature'])
+  test('checkpoint blocks ' + attack + ' at startup', async () => {
+    const { mkdtempSync, rmSync, writeFileSync } = await import('node:fs');
+    const { tmpdir } = await import('node:os');
+    const { join } = await import('node:path');
+    const { generateKeyPairSync, sign } = await import('node:crypto');
+    const { canonical } = await import('../src/security.js');
+    const { DatabaseSync } = await import('node:sqlite');
+    const dir = mkdtempSync(join(tmpdir(), 'sentinel-checkpoint-'));
+    const db = join(dir, 'db'),
+      file = join(dir, 'checkpoint.json'),
+      pub = join(dir, 'public.pem');
+    const pair = generateKeyPairSync('ed25519');
+    writeFileSync(pub, pair.publicKey.export({ format: 'pem', type: 'spki' }));
+    const store = new Store(db, key);
+    store.audit('sandbox', 'a', 'one', 'allowed');
+    const row = store.audit('sandbox', 'a', 'two', 'allowed');
+    store.close();
+    const payload = { seq: row.seq, hash: row.hash, at: row.at };
+    const signature = sign(null, Buffer.from(canonical(payload)), pair.privateKey).toString(
+      'base64',
+    );
+    writeFileSync(
+      file,
+      JSON.stringify({
+        ...payload,
+        signature: attack === 'forged signature' ? Buffer.alloc(64).toString('base64') : signature,
+      }),
+    );
+    if (attack === 'tail rollback') {
+      const raw = new DatabaseSync(db);
+      raw.exec('DELETE FROM audit WHERE seq>=2');
+      raw.close();
+    }
+    const previous = { file: process.env.CHECKPOINT_FILE, pub: process.env.CHECKPOINT_PUBLIC_KEY };
+    process.env.CHECKPOINT_FILE = file;
+    process.env.CHECKPOINT_PUBLIC_KEY = pub;
+    try {
+      assert.throws(() => new Store(db, key), /checkpoint/i);
+    } finally {
+      if (previous.file === undefined) delete process.env.CHECKPOINT_FILE;
+      else process.env.CHECKPOINT_FILE = previous.file;
+      if (previous.pub === undefined) delete process.env.CHECKPOINT_PUBLIC_KEY;
+      else process.env.CHECKPOINT_PUBLIC_KEY = previous.pub;
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });

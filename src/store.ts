@@ -1,3 +1,4 @@
+import { verifyCheckpoint } from './checkpoint.js';
 import { DatabaseSync } from 'node:sqlite';
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { mkdirSync, chmodSync } from 'node:fs';
@@ -23,6 +24,10 @@ export class Store {
     path: string,
     private key: string,
     private now = () => Date.now(),
+    checkpoint: { file?: string | undefined; key?: string | undefined } = {
+      file: process.env.CHECKPOINT_FILE,
+      key: process.env.CHECKPOINT_PUBLIC_KEY ?? process.env.CHECKPOINT_KEY,
+    },
   ) {
     if (Buffer.byteLength(key) < 32) throw new Error('Audit key must be at least 32 bytes');
     if (path !== ':memory:') mkdirSync(dirname(path), { recursive: true, mode: 0o700 });
@@ -47,6 +52,10 @@ export class Store {
           );
         });
       if (!this.verify(true)) throw new Error('Audit integrity check failed');
+      if (checkpoint.file) {
+        if (!checkpoint.key) throw new Error('Checkpoint verification key is required');
+        verifyCheckpoint(this.db, checkpoint.file, checkpoint.key);
+      }
     } catch (e) {
       this.db.close();
       if (e instanceof Error && /database is locked/.test(e.message))
