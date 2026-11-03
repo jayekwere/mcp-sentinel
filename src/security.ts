@@ -1,4 +1,4 @@
-import { createHash, randomUUID } from 'node:crypto';
+import { createHash, randomUUID, createPublicKey } from 'node:crypto';
 import {
   createLocalJWKSet,
   jwtVerify,
@@ -48,18 +48,60 @@ export interface AuthConfig {
 }
 export class Auth {
   private keys;
+  private generation = 0;
+  isRevoked: (tenant: string, subject: string, jti: string) => boolean = () => false;
   private identities: Map<string, Identity>;
   constructor(public config: AuthConfig) {
+    z.object({
+      issuer: z.url().refine((v) => new URL(v).protocol === 'https:'),
+      audience: z.string().min(1),
+      jwks: z.object({ keys: z.array(z.record(z.string(), z.unknown())).min(1).max(100) }).strict(),
+      identities: z.array(IdentitySchema).min(1).max(1000),
+    })
+      .strict()
+      .parse(config);
+    for (const k of config.jwks.keys) {
+      if (
+        (k.use !== undefined && k.use !== 'sig') ||
+        (k.key_ops !== undefined &&
+          (!Array.isArray(k.key_ops) || k.key_ops.length !== 1 || k.key_ops[0] !== 'verify'))
+      )
+        throw new Error('Verification key usage required');
+      if (!(
+        (k.kty === 'EC' && k.crv === 'P-256' && (k.alg === undefined || k.alg === 'ES256')) ||
+        (k.kty === 'RSA' && (k.alg === undefined || k.alg === 'RS256'))
+      ))
+        throw new Error('Unsupported verification key');
+      const parsed = createPublicKey({ key: k, format: 'jwk' });
+      if (
+        parsed.asymmetricKeyType === 'rsa' &&
+        (parsed.asymmetricKeyDetails?.modulusLength ?? 0) < 2048
+      )
+        throw new Error('Weak RSA key');
+    }
     if (!config.jwks.keys.length || config.jwks.keys.some((k) => 'd' in k || k.kty === 'oct'))
       throw new Error('Public asymmetric verification keys required');
+    config = structuredClone(config);
+    this.config = config;
     this.keys = createLocalJWKSet(config.jwks);
     const ids = z.array(IdentitySchema).min(1).max(1000).parse(config.identities);
     this.identities = new Map(ids.map((i) => [i.subject, Object.freeze(i)]));
     if (this.identities.size !== ids.length) throw new Error('Duplicate subject');
   }
+  reload(input: AuthConfig) {
+    const next = new Auth(input);
+    this.config = next.config;
+    this.keys = next.keys;
+    this.identities = next.identities;
+    this.generation++;
+  }
+  identity(subject: string) {
+    return this.identities.get(subject);
+  }
   async verify(header: string | undefined): Promise<Identity> {
     if (!header?.startsWith('Bearer ') || header.length > 8192)
       throw new Fault(401, 'invalid_token');
+    const generation = this.generation;
     try {
       const { payload, protectedHeader } = await jwtVerify(header.slice(7), this.keys, {
         issuer: this.config.issuer,
@@ -77,7 +119,12 @@ export class Auth {
       )
         throw new Error('Token contract');
       const identity = this.identities.get(payload.sub!);
-      if (!identity) throw new Error('Unregistered subject');
+      if (
+        !identity ||
+        generation !== this.generation ||
+        this.isRevoked(identity.tenant, identity.subject, payload.jti)
+      )
+        throw new Error('Unregistered or revoked subject');
       return identity;
     } catch {
       throw new Fault(401, 'invalid_token');
@@ -134,4 +181,16 @@ export class Limiter {
     }
     if (++bucket.n > this.limit) throw new Fault(429, 'rate_limited');
   }
+}
+
+export function argumentPreview(detail: Record<string, unknown>): Record<string, unknown> {
+  if (!('args' in detail)) return detail;
+  const serialized = canonical(detail.args);
+  if (Buffer.byteLength(serialized) <= 4096) return { ...detail, argsTruncated: false };
+  let preview = '';
+  for (const char of serialized) {
+    if (Buffer.byteLength(preview + char) > 4096) break;
+    preview += char;
+  }
+  return { ...detail, args: preview, argsTruncated: true };
 }

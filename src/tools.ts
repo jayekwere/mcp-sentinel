@@ -77,7 +77,14 @@ export function cloudSummary(input: unknown) {
     source: 'supplied-export',
   };
 }
-export async function execute(name: string, args: unknown): Promise<unknown> {
+export interface ExecutionContext {
+  onRedaction: (counts: Record<string, number>) => void;
+}
+export async function execute(
+  name: string,
+  args: unknown,
+  _context?: ExecutionContext,
+): Promise<unknown> {
   const parsed = validate(name, args);
   if (name === 'cloud.audit.summary') return cloudSummary(parsed);
   if (name === 'evidence.export') {

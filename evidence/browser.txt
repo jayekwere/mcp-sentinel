@@ -1,14 +1,15 @@
 
-> mcp-sentinel@1.0.0 test:browser
+> mcp-sentinel@1.1.0 test:browser
 > playwright test
 
-[WebServer] (node:80788) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (node:63188) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
 [WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
 
-Running 1 test using 1 worker
+Running 2 tests using 1 worker
 
-(node:80790) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(node:63190) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
 (Use `node --trace-warnings ...` to show where the warning was created)
-  ✓  1 test/browser/dashboard.spec.ts:4:1 › dashboard workflow, safe rendering, and mobile layout (1.5s)
+  ✓  1 test/browser/dashboard.spec.ts:4:1 › dashboard workflow, safe rendering, and mobile layout (1.9s)
+  ✓  2 test/browser/dashboard.spec.ts:40:1 › custom approval shows bounded arguments and renders injected markup as text (852ms)
 
-  1 passed (3.3s)
+  2 passed (5.6s)

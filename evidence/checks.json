@@ -1,0 +1,50 @@
+[
+  {
+    "name": "verify",
+    "exit": 0
+  },
+  {
+    "name": "coverage",
+    "exit": 0
+  },
+  {
+    "name": "demo",
+    "exit": 0
+  },
+  {
+    "name": "browser",
+    "exit": 0
+  },
+  {
+    "name": "container build",
+    "exit": 0
+  },
+  {
+    "name": "container smoke",
+    "exit": 0
+  },
+  {
+    "name": "dependency audit",
+    "exit": 0
+  },
+  {
+    "name": "actionlint version",
+    "exit": 0
+  },
+  {
+    "name": "workflow lint",
+    "exit": 0
+  },
+  {
+    "name": "gitleaks version",
+    "exit": 0
+  },
+  {
+    "name": "secret scan",
+    "exit": 0
+  },
+  {
+    "name": "content policy",
+    "exit": 0
+  }
+]

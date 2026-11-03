@@ -1,0 +1,42 @@
+
+> mcp-sentinel@1.1.0 demo
+> node --import tsx scripts/demo.ts --write
+
+{
+  "unapproved": {
+    "status": 403,
+    "error": "approval_required"
+  },
+  "review": "approved by independent operator",
+  "approved": {
+    "status": 200,
+    "result": {
+      "format": "json",
+      "data": {
+        "caseId": "case-demo",
+        "classification": "synthetic",
+        "timeline": [
+          {
+            "time": "2026-01-01T00:00:00Z",
+            "action": "access-reviewed",
+            "outcome": "allowed"
+          }
+        ]
+      },
+      "contentDigest": "558089d7df863bab905ba1eaff560fe459c3f6d9eff85b95e576453fbf0783c6"
+    }
+  },
+  "replayed": {
+    "status": 403,
+    "error": "approval_required"
+  },
+  "audit": {
+    "integrity": true,
+    "entries": 12
+  },
+  "detections": [
+    "agent-denial-burst",
+    "invalid-approval-use",
+    "invalid-approval-use"
+  ]
+}

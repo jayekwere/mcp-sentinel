@@ -7,7 +7,7 @@ import { Fault } from './security.js';
 export function mcpRoutes(app: FastifyInstance, gateway: Gateway, baseUrl: string) {
   app.post('/mcp', async (req, reply) => {
     const server = new Server(
-      { name: 'mcp-sentinel', version: '1.0.0' },
+      { name: 'mcp-sentinel', version: '1.1.0' },
       { capabilities: { tools: {} } },
     );
     server.setRequestHandler(ListToolsRequestSchema, async () => ({

@@ -1,22 +1,27 @@
 # Release validation
 
-Recorded on 2026-10-30. These are executed checks, not proposed acceptance criteria. Host validation used Node 26.3.0, and the pinned Alpine image independently ran the suite on Node 24. Browser workflows used a locally installed compatible browser through Playwright. Hosted CI uses the Playwright Chromium build and is visible in the repository Actions tab.
+Generated on 2026-11-03 by `npm run evidence`. All results below come from executed commands against the source hashes in [source-manifest.json](source-manifest.json). Host Node 26.3.0; the container build independently runs tests on Node 24.
 
 | Check | Observed result | Evidence |
 | --- | --- | --- |
-| Formatter, strict types, build and demo | Passed | [verify.txt](verify.txt) |
-| Automated tests | 39 passed, zero failed or skipped | [coverage.txt](coverage.txt) |
-| V8 coverage, exercised source modules | 97.68% lines, 91.27% branches | [coverage.txt](coverage.txt) |
-| Browser workflow | Passed at 1440px desktop and 390px mobile widths, no page errors | [browser.txt](browser.txt), [desktop](../docs/dashboard.png), [mobile](../docs/dashboard-mobile.png) |
-| Container build | Passed, includes Node 24 type and test checks | [container-build.txt](container-build.txt) |
-| Restricted runtime | Passed with non-root user, read-only root, dropped capabilities and process/memory limits | [container-smoke.txt](container-smoke.txt) |
-| Locked dependency advisory query | Zero reported advisories at validation time | [dependencies.json](dependencies.json) |
-| Tracked text policy and credential-pattern inspection | Passed | `node scripts/check-content.mjs` and local tracked-file inspection |
+| Format, strict types, automated tests, build and demo | Passed | [verify.txt](verify.txt) |
+| Automated coverage run | 79 passed, 0 failed, 0 skipped (79 tests) | [coverage.txt](coverage.txt) |
+| Browser | 2 passed, desktop and mobile, no page errors | [browser.txt](browser.txt), [desktop](../docs/dashboard.png), [mobile](../docs/dashboard-mobile.png) |
+| Container build | Passed, includes independent Node 24 type and test checks | [container-build.txt](container-build.txt) |
+| Container smoke | Passed, non-root distroless Node 24, read-only root, dropped capabilities, limits, authentication, approvals and replay checks | [container-smoke.txt](container-smoke.txt) |
+| Locked dependency advisory query | 0 reported advisories at execution time | [dependencies.json](dependencies.json) |
+| Tracked text policy | Passed | [content-policy.txt](content-policy.txt) |
+| Workflow syntax | Passed locally with actionlint | [workflows.txt](workflows.txt), [version](actionlint-version.txt) |
+| Secret scan | Passed locally with gitleaks over all reachable history | [gitleaks.txt](gitleaks.txt), [version](gitleaks-version.txt) |
 
-The coverage report includes modules loaded by the automated tests. Startup configuration, the main entrypoint, and browser source are not included in those percentages. Browser and container checks exercise those paths separately. Coverage is evidence of execution, not proof that all security properties hold. Dependency advisory results change over time and do not cover every vulnerability in a container base.
+Coverage totals reported by V8:
 
-[Source manifest](source-manifest.json) fingerprints the implementation, tests, build scripts, workflow, and dependency lockfile. The full test output records case names and actual outcomes. Disposable tokens are intentionally absent from committed logs. Demo timestamps, request IDs, approval IDs, audit hashes, and measured durations vary per run.
+```text
+ℹ all files        |  98.19 |    86.12 |   97.58 |
+```
 
-The MCP test uses a real official SDK client over local HTTP for initialization, discovery, tool execution, independent approval metadata, and replay rejection. A separate real SDK server tests the optional fixed upstream adapter's descriptor pin and dedicated credential. Concurrency tests race twelve calls against one approval and observe one successful execution. Persistence tests reopen SQLite before trying reuse. Failure tests confirm an upstream error does not restore approval or expose its error text.
+Coverage totals describe only the files listed in the V8 table, including captured startup and maintenance subprocesses. Browser source isn't part of this report. Logs retain command output with trailing display whitespace removed. Browser tests use the locally configured compatible browser via CHROME_PATH. Coverage is execution evidence, not proof of all security properties. Dependency results change over time and aren't a container vulnerability scan.
 
-Cloud summary adapters are tested against synthetic AWS, Azure, and GCP field projections. No live cloud account, external issuer, production reverse proxy, or external MCP service was tested. The evidence export tool returns a complete synthetic payload and never claims to create absent files or resources.
+The attack suite tests 1,000 bad tokens, audit tampering, blind and changed approvals, legacy migration, revocations, real SIGHUP reload, full descriptor changes, forbidden upstream content, structured-output mismatch, each secret pattern and safe audit counts, file modes, second writers in separate processes, transaction rollback, checkpoint rollback/signature forgery, maintenance commands, detection deduplication/failure isolation, encoded routes, and containment expiry/release/rearming. See [the threat-to-test map](../docs/THREAT-MODEL.md).
+
+The gitleaks configuration excludes only the generated SHA256 source manifest, which caused a generic-key false positive. Synthetic JWT fixtures are assembled from segments so their literal value isn't mistaken for a live credential in source history. CI workflow assertions check pinned action references, scoped permissions and required release steps. These local checks don't execute hosted CodeQL, Scorecard, gitleaks, keyless signing or provenance publication. No release tag, public deployment, live external issuer, cloud account or external MCP service was exercised. Real MCP SDK clients and fixture servers run over local HTTP; a child service exercises production-format configuration and SIGHUP. The demo uses synthetic exports. No credentials are printed in committed evidence. UUIDs, timestamps, hashes and durations vary by run.

@@ -1,7 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
-import { Store } from './store.js';
-import { digest, Fault, type Identity } from './security.js';
+import { DetectionExport, type Detection, type DetectionOptions } from './detection.js';
+import { Store, type Audit } from './store.js';
+import { digest, canonical, argumentPreview, Fault, type Identity } from './security.js';
 import { PolicyEngine } from './policy.js';
 import { execute, schemaHash, tools, validate } from './tools.js';
 export const CallSchema = z
@@ -20,28 +21,102 @@ interface Approval {
   expires: number;
   status: string;
   reviewer: string | null;
+  request: string;
 }
 export class Gateway {
+  private exporter: DetectionExport;
+  private suspendSeconds: number;
   constructor(
     readonly store: Store,
     readonly policy = new PolicyEngine(),
     private now = () => Date.now(),
     private executor = execute,
     private executionVersion = 'builtin-v1',
-  ) {}
+    options: DetectionOptions = { sink: process.env.DETECTION_SINK },
+  ) {
+    this.suspendSeconds = z.coerce
+      .number()
+      .int()
+      .min(0)
+      .max(86400)
+      .parse(options.suspendSeconds ?? process.env.SUSPEND_ON_DENIAL_BURST_SECONDS ?? 0);
+    this.exporter = new DetectionExport(store, options);
+    store.onAudit((event) => this.detect(event));
+  }
+  flushDetections() {
+    return this.exporter.flush();
+  }
+  private detect(event: Audit) {
+    let detection: Detection | undefined;
+    if (event.action === 'tool.denied') {
+      const prior = this.store.db
+        .prepare(
+          "SELECT evidence FROM detections WHERE tenant=? AND rule='agent-denial-burst' AND json_extract(body,'$.actor')=? ORDER BY evidence DESC LIMIT 1",
+        )
+        .get(event.tenant, event.actor) as { evidence: number } | undefined;
+      const n = this.store
+        .audits(event.tenant, 1000)
+        .filter(
+          (e) =>
+            e.action === 'tool.denied' &&
+            e.seq > (prior?.evidence ?? 0) &&
+            e.actor === event.actor &&
+            Date.parse(e.at) > this.now() - 60000,
+        ).length;
+      if (n >= 5)
+        detection = {
+          rule: 'agent-denial-burst',
+          severity: 'high',
+          actor: event.actor,
+          evidence: event.seq,
+          count: n,
+          windowSeconds: 60,
+        };
+    } else {
+      const rules: Record<string, [string, string]> = {
+        'approval.invalid': ['invalid-approval-use', 'high'],
+        'tool.failed': ['tool-execution-failure', 'medium'],
+        'upstream.output.redacted': ['upstream-secret-redacted', 'high'],
+      };
+      const rule = rules[event.action];
+      if (rule)
+        detection = { rule: rule[0], severity: rule[1], actor: event.actor, evidence: event.seq };
+    }
+    if (!detection) return;
+    const inserted = this.store.db
+      .prepare('INSERT OR IGNORE INTO detections VALUES(?,?,?,?,?)')
+      .run(event.tenant, detection.rule, event.seq, Date.parse(event.at), canonical(detection));
+    if (inserted.changes) {
+      if (detection.rule === 'agent-denial-burst' && this.suspendSeconds)
+        this.store.transaction(() => {
+          const expires = this.now() + this.suspendSeconds * 1000;
+          this.store.db
+            .prepare(
+              'INSERT INTO suspensions VALUES(?,?,?,?) ON CONFLICT(tenant,subject) DO UPDATE SET expires=max(expires,excluded.expires),evidence=excluded.evidence',
+            )
+            .run(event.tenant, event.actor, expires, event.seq);
+          this.store.audit(event.tenant, event.actor, 'subject.suspended', 'denied', {
+            expires,
+            evidence: event.seq,
+          });
+        });
+      this.exporter.emit(detection, event);
+    }
+  }
   private binding(who: Identity, call: Call) {
     return digest({
       subject: who.subject,
       tenant: who.tenant,
       agent: who.agent,
       tool: call.tool,
-      args: call.tool === 'evidence.export' ? call.arguments : { digest: digest(call.arguments) },
+      args: call.arguments,
       policy: this.policy.hash,
       schema: schemaHash(call.tool),
       execution: this.executionVersion,
     });
   }
   private check(who: Identity, call: Call) {
+    if (this.store.suspended(who.tenant, who.subject)) throw new Fault(403, 'subject_suspended');
     try {
       validate(call.tool, call.arguments);
       const decision = this.policy.evaluate(who, call.tool);
@@ -82,12 +157,22 @@ export class Gateway {
         .get(who.subject, this.now()) as { n: number };
       if (count.n >= 20) throw new Fault(429, 'approval_queue_full');
       this.store.db
-        .prepare('INSERT INTO approvals VALUES(?,?,?,?,?,?,NULL)')
-        .run(id, who.tenant, who.subject, this.binding(who, call), expires, 'pending');
+        .prepare(
+          'INSERT INTO approvals(id,tenant,subject,binding,expires,status,reviewer,request) VALUES(?,?,?,?,?,?,NULL,?)',
+        )
+        .run(
+          id,
+          who.tenant,
+          who.subject,
+          this.binding(who, call),
+          expires,
+          'pending',
+          canonical({ tool: call.tool, args: call.arguments }),
+        );
       this.store.audit(who.tenant, who.subject, 'approval.requested', 'pending', {
         id,
         tool: call.tool,
-        args: call.tool === 'evidence.export' ? call.arguments : { digest: digest(call.arguments) },
+        args: call.arguments,
         policy: this.policy.hash,
       });
     });
@@ -121,14 +206,12 @@ export class Gateway {
     const rows = this.store.db
       .prepare('SELECT * FROM approvals WHERE tenant=? ORDER BY expires DESC LIMIT 100')
       .all(who.tenant) as unknown as Approval[];
-    const requested = this.store
-      .audits(who.tenant, 1000)
-      .filter((a) => a.action === 'approval.requested');
     return rows.map((r) => ({
       ...r,
-      request: requested.find((a) => a.detail.id === r.id)?.detail ?? {},
+      request: argumentPreview(JSON.parse(r.request) as Record<string, unknown>),
     }));
   }
+
   async call(who: Identity, input: unknown) {
     const call = CallSchema.parse(input),
       decision = this.check(who, call),
@@ -169,52 +252,46 @@ export class Gateway {
       policy: this.policy.hash,
     });
     try {
-      const result = await this.executor(call.tool, call.arguments);
+      const result = await this.executor(call.tool, call.arguments, {
+        onRedaction: (counts) => {
+          this.store.audit(who.tenant, who.subject, 'upstream.output.redacted', 'redacted', {
+            tool: call.tool,
+            requestId,
+            counts,
+          });
+        },
+      });
       this.store.audit(who.tenant, who.subject, 'tool.completed', 'allowed', {
         tool: call.tool,
         requestId,
       });
       return { requestId, decision: 'allowed', rule: decision.rule, result };
-    } catch {
+    } catch (error) {
+      const safeCodes = [
+        'upstream_content_rejected',
+        'upstream_output_schema_invalid',
+        'upstream_descriptor_changed',
+        'upstream_result_too_large',
+        'upstream_tool_error',
+        'upstream_catalog_requires_pagination',
+      ];
+      const reason =
+        error instanceof Fault && safeCodes.includes(error.code) ? error.code : 'tool_failed';
       this.store.audit(who.tenant, who.subject, 'tool.failed', 'error', {
         tool: call.tool,
         requestId,
+        reason,
       });
-      throw new Fault(502, 'tool_failed');
+      throw new Fault(502, reason);
     }
   }
-  detections(who: Identity) {
-    const events = this.store.audits(who.tenant, 1000),
-      recent = events.filter((e) => Date.parse(e.at) > this.now() - 60000);
-    const counts = new Map<string, number>();
-    for (const e of recent.filter((e) => e.action === 'tool.denied'))
-      counts.set(e.actor, (counts.get(e.actor) ?? 0) + 1);
-    return [
-      ...[...counts]
-        .filter(([, n]) => n >= 5)
-        .map(([actor, n]) => ({
-          rule: 'agent-denial-burst',
-          severity: 'high',
-          actor,
-          count: n,
-          windowSeconds: 60,
-        })),
-      ...recent
-        .filter((e) => e.action === 'approval.invalid')
-        .map((e) => ({
-          rule: 'invalid-approval-use',
-          severity: 'high',
-          actor: e.actor,
-          evidence: e.seq,
-        })),
-      ...recent
-        .filter((e) => e.action === 'tool.failed')
-        .map((e) => ({
-          rule: 'tool-execution-failure',
-          severity: 'medium',
-          actor: e.actor,
-          evidence: e.seq,
-        })),
-    ];
+  detections(who: Identity): Detection[] {
+    return (
+      this.store.db
+        .prepare(
+          'SELECT body FROM detections WHERE tenant=? AND at>? ORDER BY evidence DESC LIMIT 1000',
+        )
+        .all(who.tenant, this.now() - 60000) as { body: string }[]
+    ).map((r) => JSON.parse(r.body) as Detection);
   }
 }

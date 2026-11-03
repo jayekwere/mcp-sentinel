@@ -17,6 +17,7 @@ export function secureApp(
   webRoot = resolve('dist/web'),
   limit = 120,
 ) {
+  auth.isRevoked = (tenant, subject, jti) => store.revoked(tenant, subject, jti);
   const base = new URL(baseUrl);
   const app = Fastify({
     logger: false,
@@ -28,6 +29,21 @@ export function secureApp(
   });
   const ips = new Limiter(limit * 3),
     subjects = new Limiter(limit);
+  let denied = 0;
+  let denialTimer: ReturnType<typeof setTimeout> | undefined;
+  const flushDenials = () => {
+    if (denied)
+      store.audit('system', 'unknown', 'authentication.denied', 'denied', {
+        count: denied,
+        windowSeconds: 60,
+      });
+    denied = 0;
+    denialTimer = undefined;
+  };
+  app.addHook('onClose', async () => {
+    clearTimeout(denialTimer);
+    flushDenials();
+  });
   app.decorateRequest('identity');
   app.addHook('onRequest', async (req, reply) => {
     reply.header(
@@ -46,9 +62,12 @@ export function secureApp(
       (req.headers.origin && req.headers.origin !== base.origin)
     )
       throw new Fault(403, 'untrusted_origin');
-    if (req.url.startsWith('/api/') || req.url.split('?')[0] === '/mcp') {
+    const route = req.routeOptions.url ?? req.url.split('?')[0]!;
+    if (route.startsWith('/api/') || route === '/mcp') {
       try {
         req.identity = await auth.verify(req.headers.authorization);
+        if (store.suspended(req.identity.tenant, req.identity.subject))
+          throw new Fault(403, 'subject_suspended');
         subjects.take(req.identity.subject);
       } catch (e) {
         if (e instanceof Fault && e.status === 401) {
@@ -56,7 +75,8 @@ export function secureApp(
             'www-authenticate',
             `Bearer resource_metadata="${base.origin}/.well-known/oauth-protected-resource"`,
           );
-          store.audit('system', 'unknown', 'authentication', 'denied');
+          denied = Math.min(Number.MAX_SAFE_INTEGER, denied + 1);
+          denialTimer ??= setTimeout(flushDenials, 60000).unref();
         }
         throw e;
       }

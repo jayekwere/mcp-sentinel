@@ -108,12 +108,14 @@ test('audit detects edited content, removed middle records, and wrong keys on re
     store.close();
     store = new Store(file, key);
     assert.equal(store.verify(), true);
+    store.close();
     assert.throws(() => {
       const other = new Store(file, 'x'.repeat(32));
       other.close();
     }, /integrity/);
+    store = new Store(file, key);
     store.db.prepare('DELETE FROM audit WHERE seq=2').run();
-    assert.equal(store.verify(), false);
+    assert.equal(store.verify(true), false);
   } finally {
     store.close();
     rmSync(dir, { recursive: true, force: true });

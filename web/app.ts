@@ -38,7 +38,7 @@ function cell(row: HTMLElement, text: string, cls = '') {
 async function refresh() {
   const data = await api('/api/overview');
   for (const key of ['allowed', 'denied']) $(key).textContent = String(data.totals[key]);
-  $('pending').textContent = String(data.totals.pending.n);
+  $('pending').textContent = String(data.totals.pending);
   $('signals').textContent = String(data.detections.length);
   $('policy-version').textContent = data.policy.version;
   $('rule-count').textContent = String(data.policy.rules);
@@ -55,6 +55,20 @@ async function refresh() {
     cell(row, e.outcome).append();
     cell(row, `#${e.seq} · ${e.hash.slice(0, 8)}`, 'mono');
     body.append(row);
+  }
+  const suspensions = $('suspension-list');
+  suspensions.replaceChildren();
+  if (!data.suspensions.length) suspensions.textContent = 'No active suspensions.';
+  for (const s of data.suspensions) {
+    const item = node('div', '', 'finding');
+    item.append(
+      node('p', `${s.subject} suspended until ${new Date(s.expires).toLocaleTimeString()}`),
+    );
+    const lift = node('button', 'Lift suspension', 'ghost');
+    lift.onclick = () =>
+      void api('/api/suspensions/lift', 'POST', { subject: s.subject }).then(refresh).catch(error);
+    item.append(lift);
+    suspensions.append(item);
   }
   const det = $('detections');
   det.replaceChildren();
@@ -83,7 +97,14 @@ async function refresh() {
       box.append(
         top,
         node('p', `${a.subject} · ${new Date(a.expires).toLocaleTimeString()} expiry`),
-        node('p', JSON.stringify(a.request.args ?? {}), 'mono'),
+        node(
+          'p',
+          (typeof a.request.args === 'string'
+            ? a.request.args
+            : JSON.stringify(a.request.args ?? {})) +
+            (a.request.argsTruncated ? ' [truncated at 4 KB]' : ''),
+          'mono',
+        ),
         node('p', a.id, 'mono'),
       );
       if (a.status === 'pending' && a.expires > Date.now()) {
