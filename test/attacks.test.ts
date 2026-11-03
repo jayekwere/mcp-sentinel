@@ -802,3 +802,18 @@ for (const outcome of ['blocks all API and MCP requests', 'expires', 'operator l
       store.close();
     }
   });
+
+test('prevents mutable GitHub Action references and broad workflow token permissions', async () => {
+  const { readdirSync, readFileSync } = await import('node:fs');
+  const files = readdirSync('.github/workflows').filter((f) => f.endsWith('.yml'));
+  for (const required of ['codeql.yml', 'gitleaks.yml', 'scorecard.yml'])
+    assert.ok(files.includes(required));
+  for (const file of files) {
+    const text = readFileSync('.github/workflows/' + file, 'utf8');
+    for (const line of text.split('\n').filter((l) => l.includes('uses:')))
+      assert.match(line, /uses: [\w/-]+@[0-9a-f]{40} # v[0-9]/, file);
+    assert.ok(!text.includes('permissions: write-all'), file);
+    assert.ok(!/^  id-token: write$/m.test(text), file);
+    assert.ok(text.includes('persist-credentials: false'), file);
+  }
+});

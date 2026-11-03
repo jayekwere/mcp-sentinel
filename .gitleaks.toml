@@ -1,0 +1,6 @@
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = 'Generated source manifest contains SHA256 content fingerprints, not credentials'
+paths = ['''^evidence/source-manifest\.json$''']

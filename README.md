@@ -4,7 +4,7 @@
 
 Authenticate a registered agent, authorize its exact tool, validate arguments, require independent approval where configured, and record the decision before execution. Includes a real Streamable HTTP MCP endpoint, a REST API, a schema-pinned upstream MCP adapter, cloud-export summary tools, and an evidence dashboard.
 
-[![Verify](https://github.com/jayekwere/mcp-sentinel/actions/workflows/verify.yml/badge.svg)](https://github.com/jayekwere/mcp-sentinel/actions/workflows/verify.yml) [MIT](LICENSE)
+[![Verify](https://github.com/jayekwere/mcp-sentinel/actions/workflows/verify.yml/badge.svg)](https://github.com/jayekwere/mcp-sentinel/actions/workflows/verify.yml) [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/jayekwere/mcp-sentinel/badge)](https://scorecard.dev/viewer/?uri=github.com/jayekwere/mcp-sentinel) [MIT](LICENSE)
 
 ![MCP Sentinel dashboard](docs/dashboard.png)
 
