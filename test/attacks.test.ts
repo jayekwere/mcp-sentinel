@@ -817,3 +817,16 @@ test('prevents mutable GitHub Action references and broad workflow token permiss
     assert.ok(text.includes('persist-credentials: false'), file);
   }
 });
+
+test('release requires tag-scoped keyless signing SPDX SBOM and provenance', async () => {
+  const { readFileSync } = await import('node:fs');
+  const workflow = readFileSync('.github/workflows/release.yml', 'utf8');
+  assert.match(workflow, /tags: \['v\*'\]/);
+  assert.match(workflow, /format: spdx-json/);
+  assert.match(workflow, /cosign sign --yes/);
+  assert.match(workflow, /cosign attest --yes/);
+  assert.match(workflow, /actions\/attest-build-provenance@[0-9a-f]{40}/);
+  assert.match(workflow, /push-to-registry: true/);
+  assert.match(workflow, /^      id-token: write$/m);
+  assert.ok(!/^  id-token: write$/m.test(workflow));
+});
