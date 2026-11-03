@@ -19,6 +19,7 @@ const upstream = process.env.UPSTREAM_CONFIG
 const { app } = createApp({
   auth: c.auth,
   store,
+  suspendSeconds: c.suspendSeconds,
   baseUrl: c.baseUrl,
   policy,
   ...(upstream ? { executor: upstream.execute, executionVersion: upstream.version } : {}),

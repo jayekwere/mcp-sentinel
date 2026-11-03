@@ -62,9 +62,12 @@ export function secureApp(
       (req.headers.origin && req.headers.origin !== base.origin)
     )
       throw new Fault(403, 'untrusted_origin');
-    if (req.url.startsWith('/api/') || req.url.split('?')[0] === '/mcp') {
+    const route = req.routeOptions.url ?? req.url.split('?')[0]!;
+    if (route.startsWith('/api/') || route === '/mcp') {
       try {
         req.identity = await auth.verify(req.headers.authorization);
+        if (store.suspended(req.identity.tenant, req.identity.subject))
+          throw new Fault(403, 'subject_suspended');
         subjects.take(req.identity.subject);
       } catch (e) {
         if (e instanceof Fault && e.status === 401) {

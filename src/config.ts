@@ -34,6 +34,7 @@ export async function config(name: string, port: number) {
     port: Number(url.port || port),
     host: process.env.HOST ?? '127.0.0.1',
     demo,
+    suspendSeconds: Number(process.env.SUSPEND_ON_DENIAL_BURST_SECONDS ?? (demo ? 300 : 0)),
   };
 }
 

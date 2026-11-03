@@ -25,6 +25,7 @@ interface Approval {
 }
 export class Gateway {
   private exporter: DetectionExport;
+  private suspendSeconds: number;
   constructor(
     readonly store: Store,
     readonly policy = new PolicyEngine(),
@@ -33,6 +34,12 @@ export class Gateway {
     private executionVersion = 'builtin-v1',
     options: DetectionOptions = { sink: process.env.DETECTION_SINK },
   ) {
+    this.suspendSeconds = z.coerce
+      .number()
+      .int()
+      .min(0)
+      .max(86400)
+      .parse(options.suspendSeconds ?? process.env.SUSPEND_ON_DENIAL_BURST_SECONDS ?? 0);
     this.exporter = new DetectionExport(store, options);
     store.onAudit((event) => this.detect(event));
   }
@@ -42,15 +49,21 @@ export class Gateway {
   private detect(event: Audit) {
     let detection: Detection | undefined;
     if (event.action === 'tool.denied') {
+      const prior = this.store.db
+        .prepare(
+          "SELECT evidence FROM detections WHERE tenant=? AND rule='agent-denial-burst' AND json_extract(body,'$.actor')=? ORDER BY evidence DESC LIMIT 1",
+        )
+        .get(event.tenant, event.actor) as { evidence: number } | undefined;
       const n = this.store
         .audits(event.tenant, 1000)
         .filter(
           (e) =>
             e.action === 'tool.denied' &&
+            e.seq > (prior?.evidence ?? 0) &&
             e.actor === event.actor &&
             Date.parse(e.at) > this.now() - 60000,
         ).length;
-      if (n === 5)
+      if (n >= 5)
         detection = {
           rule: 'agent-denial-burst',
           severity: 'high',
@@ -73,7 +86,22 @@ export class Gateway {
     const inserted = this.store.db
       .prepare('INSERT OR IGNORE INTO detections VALUES(?,?,?,?,?)')
       .run(event.tenant, detection.rule, event.seq, Date.parse(event.at), canonical(detection));
-    if (inserted.changes) this.exporter.emit(detection, event);
+    if (inserted.changes) {
+      if (detection.rule === 'agent-denial-burst' && this.suspendSeconds)
+        this.store.transaction(() => {
+          const expires = this.now() + this.suspendSeconds * 1000;
+          this.store.db
+            .prepare(
+              'INSERT INTO suspensions VALUES(?,?,?,?) ON CONFLICT(tenant,subject) DO UPDATE SET expires=max(expires,excluded.expires),evidence=excluded.evidence',
+            )
+            .run(event.tenant, event.actor, expires, event.seq);
+          this.store.audit(event.tenant, event.actor, 'subject.suspended', 'denied', {
+            expires,
+            evidence: event.seq,
+          });
+        });
+      this.exporter.emit(detection, event);
+    }
   }
   private binding(who: Identity, call: Call) {
     return digest({
@@ -88,6 +116,7 @@ export class Gateway {
     });
   }
   private check(who: Identity, call: Call) {
+    if (this.store.suspended(who.tenant, who.subject)) throw new Fault(403, 'subject_suspended');
     try {
       validate(call.tool, call.arguments);
       const decision = this.policy.evaluate(who, call.tool);

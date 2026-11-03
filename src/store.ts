@@ -50,6 +50,7 @@ export class Store {
       CREATE TABLE IF NOT EXISTS audit(seq INTEGER PRIMARY KEY, body TEXT NOT NULL, hash TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS approvals(id TEXT PRIMARY KEY, tenant TEXT NOT NULL, subject TEXT NOT NULL, binding TEXT NOT NULL, expires INTEGER NOT NULL, status TEXT NOT NULL, reviewer TEXT);
       CREATE TABLE IF NOT EXISTS revocations(tenant TEXT NOT NULL, kind TEXT NOT NULL, value TEXT NOT NULL, subject TEXT NOT NULL, expires INTEGER NOT NULL, PRIMARY KEY(tenant,kind,value,subject));
+      CREATE TABLE IF NOT EXISTS suspensions(tenant TEXT NOT NULL, subject TEXT NOT NULL, expires INTEGER NOT NULL, evidence INTEGER NOT NULL, PRIMARY KEY(tenant,subject));
       CREATE TABLE IF NOT EXISTS detections(tenant TEXT NOT NULL, rule TEXT NOT NULL, evidence INTEGER NOT NULL, at INTEGER NOT NULL, body TEXT NOT NULL, PRIMARY KEY(tenant,rule,evidence));
       CREATE TABLE IF NOT EXISTS runs(id TEXT PRIMARY KEY, tenant TEXT NOT NULL, body TEXT NOT NULL);
     `);
@@ -169,6 +170,18 @@ export class Store {
       hash: r.hash,
       detail: argumentPreview(JSON.parse(r.body).detail),
     }));
+  }
+  suspended(tenant: string, subject: string): boolean {
+    return !!this.db
+      .prepare('SELECT 1 FROM suspensions WHERE tenant=? AND subject=? AND expires>?')
+      .get(tenant, subject, this.now());
+  }
+  suspensions(tenant: string) {
+    return this.db
+      .prepare(
+        'SELECT subject,expires,evidence FROM suspensions WHERE tenant=? AND expires>? ORDER BY expires DESC LIMIT 1000',
+      )
+      .all(tenant, this.now());
   }
   revoked(tenant: string, subject: string, jti: string): boolean {
     return !!this.db

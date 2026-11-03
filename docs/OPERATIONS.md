@@ -96,3 +96,7 @@ Events use the [OCSF 1.4 Detection Finding](https://schema.ocsf.io/1.4.0/classes
 ```
 
 Findings are derived when audit writes commit, so exports don't depend on the dashboard being open. Dashboard findings expire from its sixty-second view; the deduplication record persists. Detection state has no automatic retention. Monitor database growth.
+
+## Automatic containment
+
+`SUSPEND_ON_DENIAL_BURST_SECONDS` defaults to `0` (off); demo startup defaults to `300`. Values must be integer seconds from 0 through 86400. A new `agent-denial-burst` finding suspends that subject in its tenant, records `subject.suspended`, and blocks every API and MCP request with `403 subject_suspended`. Expiry uses server time and state survives restart. Static pages and health remain public. An independent active operator can lift a suspension with strict JSON `{"subject":"demo-agent"}` at `POST /api/suspensions/lift`; cross-tenant records aren't accessible. Lifts record `subject.reinstated`. The overview and dashboard show active tenant suspensions. Another qualifying burst can suspend a subject again. Burst counting still examines at most 1,000 recent tenant audit rows and isn't a distributed abuse detector.

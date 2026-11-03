@@ -8,6 +8,7 @@ export interface Detection {
   windowSeconds?: number;
 }
 export interface DetectionOptions {
+  suspendSeconds?: number | undefined;
   sink?: string | undefined;
   write?: (line: string) => void;
   fetch?: typeof fetch;

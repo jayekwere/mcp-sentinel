@@ -669,3 +669,136 @@ test('webhook failure is audited without breaking tool calls', async () => {
     store.close();
   }
 });
+
+for (const recovery of ['expiry', 'operator lift'])
+  test('denial burst containment rearms after ' + recovery, async () => {
+    const { Gateway } = await import('../src/gateway.js');
+    const demo = await demoAuth('mcp-sentinel');
+    let now = Date.now();
+    const store = new Store(':memory:', key, () => now);
+    const { app, gateway } = createApp({
+      auth: demo.auth,
+      store,
+      baseUrl: 'http://127.0.0.1:4310',
+      now: () => now,
+      suspendSeconds: 1,
+    });
+    const agent = demo.auth.config.identities[0]!;
+    try {
+      for (let i = 0; i < 5; i++)
+        await assert.rejects(gateway.call(agent, { tool: 'unknown', arguments: {} }));
+      assert.equal(store.suspended('sandbox', 'demo-agent'), true);
+      if (recovery === 'expiry') now += 1001;
+      else
+        assert.equal(
+          (
+            await app.inject({
+              method: 'POST',
+              url: '/api/suspensions/lift',
+              headers: { host: '127.0.0.1:4310', authorization: 'Bearer ' + demo.tokens.operator },
+              payload: { subject: 'demo-agent' },
+            })
+          ).statusCode,
+          200,
+        );
+      for (let i = 0; i < 5; i++)
+        await assert.rejects(gateway.call(agent, { tool: 'unknown', arguments: {} }));
+      assert.equal(store.suspended('sandbox', 'demo-agent'), true);
+      assert.equal(
+        store.audits('sandbox').filter((e) => e.action === 'subject.suspended').length,
+        2,
+      );
+    } finally {
+      await app.close();
+      store.close();
+    }
+  });
+
+for (const outcome of ['blocks all API and MCP requests', 'expires', 'operator lifts early'])
+  test('denial burst suspension ' + outcome, async () => {
+    const demo = await demoAuth('mcp-sentinel');
+    let now = Date.now();
+    const store = new Store(':memory:', key, () => now);
+    const { app } = createApp({
+      auth: demo.auth,
+      store,
+      baseUrl: 'http://127.0.0.1:4310',
+      suspendSeconds: 300,
+      now: () => now,
+    });
+    const headers = (role = 'agent') => ({
+      host: '127.0.0.1:4310',
+      authorization: 'Bearer ' + demo.tokens[role],
+    });
+    try {
+      for (let i = 0; i < 5; i++)
+        assert.equal(
+          (
+            await app.inject({
+              method: 'POST',
+              url: '/api/call',
+              headers: headers(),
+              payload: { tool: 'unknown', arguments: {} },
+            })
+          ).statusCode,
+          403,
+        );
+      if (outcome === 'expires') now += 300001;
+      if (outcome === 'operator lifts early') {
+        assert.equal(
+          (
+            await app.inject({
+              method: 'POST',
+              url: '/api/suspensions/lift',
+              headers: headers('outsider'),
+              payload: { subject: 'demo-agent' },
+            })
+          ).statusCode,
+          404,
+        );
+        assert.equal(
+          (
+            await app.inject({
+              method: 'POST',
+              url: '/api/suspensions/lift',
+              headers: headers('operator'),
+              payload: { subject: 'demo-agent' },
+            })
+          ).statusCode,
+          200,
+        );
+      }
+      for (const url of [
+        '/api/me',
+        '/api/tools',
+        '/api/audit',
+        '/api/overview',
+        '/api/approvals',
+        '/mcp',
+        '/%61pi/me',
+        '/m%63p',
+      ]) {
+        assert.equal(
+          (await app.inject({ url, headers: { host: '127.0.0.1:4310' } })).statusCode,
+          401,
+        );
+        const r = await app.inject({ url, headers: headers() });
+        if (outcome === 'blocks all API and MCP requests') {
+          assert.equal(r.statusCode, 403);
+          assert.equal(r.json().error, 'subject_suspended');
+        } else if (url === '/api/me') assert.equal(r.statusCode, 200);
+      }
+      assert.equal(
+        store.audits('sandbox').filter((e) => e.action === 'subject.suspended').length,
+        1,
+      );
+      const overview = await app.inject({ url: '/api/overview', headers: headers('operator') });
+      assert.equal(
+        overview.json().suspensions.length,
+        outcome === 'blocks all API and MCP requests' ? 1 : 0,
+      );
+    } finally {
+      await app.close();
+      store.close();
+    }
+  });

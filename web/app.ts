@@ -56,6 +56,20 @@ async function refresh() {
     cell(row, `#${e.seq} · ${e.hash.slice(0, 8)}`, 'mono');
     body.append(row);
   }
+  const suspensions = $('suspension-list');
+  suspensions.replaceChildren();
+  if (!data.suspensions.length) suspensions.textContent = 'No active suspensions.';
+  for (const s of data.suspensions) {
+    const item = node('div', '', 'finding');
+    item.append(
+      node('p', `${s.subject} suspended until ${new Date(s.expires).toLocaleTimeString()}`),
+    );
+    const lift = node('button', 'Lift suspension', 'ghost');
+    lift.onclick = () =>
+      void api('/api/suspensions/lift', 'POST', { subject: s.subject }).then(refresh).catch(error);
+    item.append(lift);
+    suspensions.append(item);
+  }
   const det = $('detections');
   det.replaceChildren();
   det.className = data.detections.length ? '' : 'empty';
