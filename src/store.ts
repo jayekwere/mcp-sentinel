@@ -17,6 +17,8 @@ export interface Audit {
 }
 export class Store {
   readonly db: DatabaseSync;
+  private verified = { seq: 0, hash: 'genesis' };
+  private integrityFailed = false;
   constructor(
     path: string,
     private key: string,
@@ -72,10 +74,20 @@ export class Store {
       .run(body.seq, canonical(body), hash);
     return { ...body, hash };
   }
-  verify(): boolean {
-    let prev = 'genesis',
-      seq = 1;
-    for (const row of this.db.prepare('SELECT body,hash FROM audit ORDER BY seq').all() as {
+  verify(full = false): boolean {
+    if (this.integrityFailed && !full) return false;
+    const head = full ? { seq: 0, hash: 'genesis' } : this.verified;
+    const anchor = head.seq
+      ? (this.db.prepare('SELECT hash FROM audit WHERE seq=?').get(head.seq) as
+          { hash: string } | undefined)
+      : undefined;
+    if (head.seq && anchor?.hash !== head.hash) return ((this.integrityFailed = true), false);
+    let prev = head.hash,
+      seq = head.seq + 1;
+    for (const row of this.db
+      .prepare('SELECT seq,body,hash FROM audit WHERE seq>? ORDER BY seq')
+      .all(head.seq) as {
+      seq: number;
       body: string;
       hash: string;
     }[]) {
@@ -85,15 +97,18 @@ export class Store {
         if (
           body.prev !== prev ||
           body.seq !== seq++ ||
+          row.seq !== body.seq ||
           hash.length !== row.hash.length ||
           !timingSafeEqual(Buffer.from(hash), Buffer.from(row.hash))
         )
-          return false;
+          return ((this.integrityFailed = true), false);
         prev = row.hash;
       } catch {
-        return false;
+        return ((this.integrityFailed = true), false);
       }
     }
+    this.verified = { seq: seq - 1, hash: prev };
+    this.integrityFailed = false;
     return true;
   }
   audits(tenant: string, limit = 200): Audit[] {

@@ -113,7 +113,7 @@ test('audit detects edited content, removed middle records, and wrong keys on re
       other.close();
     }, /integrity/);
     store.db.prepare('DELETE FROM audit WHERE seq=2').run();
-    assert.equal(store.verify(), false);
+    assert.equal(store.verify(true), false);
   } finally {
     store.close();
     rmSync(dir, { recursive: true, force: true });

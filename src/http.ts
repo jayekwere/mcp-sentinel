@@ -28,6 +28,21 @@ export function secureApp(
   });
   const ips = new Limiter(limit * 3),
     subjects = new Limiter(limit);
+  let denied = 0;
+  let denialTimer: ReturnType<typeof setTimeout> | undefined;
+  const flushDenials = () => {
+    if (denied)
+      store.audit('system', 'unknown', 'authentication.denied', 'denied', {
+        count: denied,
+        windowSeconds: 60,
+      });
+    denied = 0;
+    denialTimer = undefined;
+  };
+  app.addHook('onClose', async () => {
+    clearTimeout(denialTimer);
+    flushDenials();
+  });
   app.decorateRequest('identity');
   app.addHook('onRequest', async (req, reply) => {
     reply.header(
@@ -56,7 +71,8 @@ export function secureApp(
             'www-authenticate',
             `Bearer resource_metadata="${base.origin}/.well-known/oauth-protected-resource"`,
           );
-          store.audit('system', 'unknown', 'authentication', 'denied');
+          denied = Math.min(Number.MAX_SAFE_INTEGER, denied + 1);
+          denialTimer ??= setTimeout(flushDenials, 60000).unref();
         }
         throw e;
       }

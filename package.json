@@ -8,6 +8,7 @@
     "node": ">=24.13.0 <27"
   },
   "scripts": {
+    "audit:verify": "node --import tsx scripts/audit-verify.ts",
     "build": "tsc && node scripts/build-web.mjs",
     "typecheck": "tsc --noEmit && tsc -p tsconfig.web.json",
     "test": "node --import tsx --test --test-concurrency=1 test/*.test.ts",
