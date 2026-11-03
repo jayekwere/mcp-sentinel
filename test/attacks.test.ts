@@ -477,3 +477,24 @@ for (const [type, secret] of [
       store.close();
     }
   });
+
+test('prevents group and world access to SQLite database WAL and SHM files', async () => {
+  const { mkdtempSync, statSync, rmSync } = await import('node:fs');
+  const { tmpdir } = await import('node:os');
+  const { join } = await import('node:path');
+  const dir = mkdtempSync(join(tmpdir(), 'sentinel-permissions-'));
+  const path = join(dir, 'state.sqlite');
+  const old = process.umask(0o022);
+  let store: Store | undefined;
+  try {
+    store = new Store(path, key);
+    assert.equal(process.umask(), 0o077);
+    store.audit('sandbox', 'a', 'test', 'allowed');
+    for (const suffix of ['', '-wal', '-shm'])
+      assert.equal(statSync(path + suffix).mode & 0o777, 0o600);
+  } finally {
+    store?.close();
+    process.umask(old);
+    rmSync(dir, { recursive: true, force: true });
+  }
+});

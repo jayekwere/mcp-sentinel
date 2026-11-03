@@ -26,6 +26,7 @@ export class Store {
   ) {
     if (Buffer.byteLength(key) < 32) throw new Error('Audit key must be at least 32 bytes');
     if (path !== ':memory:') mkdirSync(dirname(path), { recursive: true, mode: 0o700 });
+    process.umask(0o077);
     this.db = new DatabaseSync(path);
     if (path !== ':memory:') chmodSync(path, 0o600);
     this.db.exec(`PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000;
