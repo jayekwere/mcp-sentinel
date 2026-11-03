@@ -842,3 +842,167 @@ test('runtime image uses a pinned minimal non-root Node 24 base and an exec heal
   assert.match(dockerfile, /HEALTHCHECK.*CMD \["\/nodejs\/bin\/node"/);
   assert.ok(!/^RUN /m.test(dockerfile));
 });
+
+test('offline audit and checkpoint commands verify real files and fail on tampering', async () => {
+  const { mkdtempSync, rmSync, writeFileSync, readFileSync } = await import('node:fs');
+  const { join } = await import('node:path');
+  const { tmpdir } = await import('node:os');
+  const { generateKeyPairSync } = await import('node:crypto');
+  const { spawnSync } = await import('node:child_process');
+  const { DatabaseSync } = await import('node:sqlite');
+  const dir = mkdtempSync(join(tmpdir(), 'sentinel-cli-'));
+  const db = join(dir, 'db'),
+    file = join(dir, 'checkpoint.json'),
+    privatePath = join(dir, 'key.pem'),
+    publicPath = join(dir, 'public.pem');
+  const pair = generateKeyPairSync('ed25519');
+  writeFileSync(privatePath, pair.privateKey.export({ format: 'pem', type: 'pkcs8' }));
+  writeFileSync(publicPath, pair.publicKey.export({ format: 'pem', type: 'spki' }));
+  const store = new Store(db, key);
+  store.audit('sandbox', 'a', 'one', 'allowed');
+  store.close();
+  const env = {
+    ...process.env,
+    DB_PATH: db,
+    AUDIT_KEY: key,
+    CHECKPOINT_FILE: file,
+    CHECKPOINT_KEY: privatePath,
+    CHECKPOINT_PUBLIC_KEY: publicPath,
+  };
+  const run = (script: string) =>
+    spawnSync(process.execPath, ['--import', 'tsx', script], { env, encoding: 'utf8' });
+  try {
+    const checkpoint = run('scripts/checkpoint.ts');
+    assert.equal(checkpoint.status, 0, checkpoint.stderr);
+    assert.equal(JSON.parse(readFileSync(file, 'utf8')).seq, 1);
+    const audit = run('scripts/audit-verify.ts');
+    assert.equal(audit.status, 0, audit.stderr);
+    assert.match(audit.stdout, /full audit verification/);
+    const raw = new DatabaseSync(db);
+    raw.exec("UPDATE audit SET body=json_set(body,'$.actor','tampered')");
+    raw.close();
+    assert.notEqual(run('scripts/audit-verify.ts').status, 0);
+    assert.notEqual(run('scripts/checkpoint.ts').status, 0);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+test('upstream pin command prints the actual full descriptor hash', async () => {
+  const { upstreamFixture } = await import('./upstream-fixture.js');
+  const { digest } = await import('../src/security.js');
+  const { execFile } = await import('node:child_process');
+  const { promisify } = await import('node:util');
+  const f = await upstreamFixture();
+  try {
+    f.state.descriptor.annotations = { destructiveHint: true };
+    f.state.descriptor.extension = { review: 'required' };
+    const { stdout } = await promisify(execFile)(
+      process.execPath,
+      ['--import', 'tsx', 'scripts/pin-upstream.ts', f.url],
+      { env: { ...process.env, DEMO: '1' } },
+    );
+    assert.deepEqual(JSON.parse(stdout), [
+      { name: 'search', descriptorHash: digest(f.state.descriptor) },
+    ]);
+  } finally {
+    await f.app.close();
+  }
+});
+test('SIGHUP rejects invalid files keeps old authentication and applies a valid reload', async () => {
+  const { mkdtempSync, rmSync, writeFileSync } = await import('node:fs');
+  const { join } = await import('node:path');
+  const { tmpdir } = await import('node:os');
+  const { spawn } = await import('node:child_process');
+  const dir = mkdtempSync(join(tmpdir(), 'sentinel-reload-')),
+    file = join(dir, 'auth.json'),
+    db = join(dir, 'db');
+  const demo = await demoAuth('https://127.0.0.1:14318');
+  writeFileSync(file, JSON.stringify(demo.auth.config));
+  const env = {
+    ...process.env,
+    DEMO: '0',
+    BASE_URL: 'https://127.0.0.1:14318',
+    HOST: '127.0.0.1',
+    PORT: '14318',
+    AUTH_CONFIG: file,
+    DB_PATH: db,
+    AUDIT_KEY: key,
+  };
+  for (const name of [
+    'CHECKPOINT_FILE',
+    'CHECKPOINT_KEY',
+    'CHECKPOINT_PUBLIC_KEY',
+    'UPSTREAM_CONFIG',
+    'POLICY_FILE',
+    'DETECTION_SINK',
+    'SUSPEND_ON_DENIAL_BURST_SECONDS',
+  ])
+    delete env[name as keyof typeof env];
+  const child = spawn(process.execPath, ['--import', 'tsx', 'src/main.ts'], {
+    env,
+    stdio: 'ignore',
+  });
+  const stop = async () => {
+    if (child.exitCode === null && child.signalCode === null) {
+      await new Promise<void>((resolve) => {
+        child.once('exit', () => resolve());
+        child.kill('SIGTERM');
+      });
+    }
+  };
+  const request = () =>
+    fetch('http://127.0.0.1:14318/api/me', {
+      headers: { authorization: 'Bearer ' + demo.tokens.agent },
+      signal: AbortSignal.timeout(1000),
+    });
+  try {
+    let ready = false;
+    for (let i = 0; i < 100; i++) {
+      try {
+        if ((await request()).status === 200) {
+          ready = true;
+          break;
+        }
+      } catch {}
+      await new Promise((r) => setTimeout(r, 50));
+    }
+    assert.equal(ready, true);
+    writeFileSync(file, '{invalid');
+    child.kill('SIGHUP');
+    await new Promise((r) => setTimeout(r, 100));
+    assert.equal((await request()).status, 200);
+    writeFileSync(
+      file,
+      JSON.stringify({
+        ...demo.auth.config,
+        identities: demo.auth.config.identities.filter((i) => i.subject !== 'demo-agent'),
+      }),
+    );
+    child.kill('SIGHUP');
+    let rejected = false;
+    for (let i = 0; i < 40; i++) {
+      if ((await request()).status === 401) {
+        rejected = true;
+        break;
+      }
+      await new Promise((r) => setTimeout(r, 25));
+    }
+    assert.equal(rejected, true);
+    await stop();
+    const store = new Store(db, key);
+    try {
+      assert.deepEqual(
+        store
+          .audits('system')
+          .filter((e) => e.action === 'authentication.reloaded')
+          .map((e) => e.outcome),
+        ['allowed', 'denied'],
+      );
+    } finally {
+      store.close();
+    }
+  } finally {
+    await stop();
+    rmSync(dir, { recursive: true, force: true });
+  }
+});

@@ -4,7 +4,7 @@
     "record": {
       "action": "approval.invalid",
       "actor": "demo-agent",
-      "at": "2026-10-30T14:16:25.934Z",
+      "at": "2026-11-03T20:11:04.717Z",
       "detail": {
         "tool": "evidence.export"
       },
@@ -12,7 +12,7 @@
       "prev": "genesis",
       "seq": 1,
       "tenant": "sandbox",
-      "hash": "3a911f5a3932e962e142d394fe5c9ae518501cf59a431682aeb2971ddd82269f"
+      "hash": "ea75d135118cbf27937eb1279b2284b18f1e952e4aeff908b199305420a28c55"
     }
   },
   {
@@ -20,21 +20,22 @@
     "record": {
       "action": "approval.requested",
       "actor": "demo-agent",
-      "at": "2026-10-30T14:16:25.938Z",
+      "at": "2026-11-03T20:11:04.721Z",
       "detail": {
         "args": {
           "caseId": "case-demo",
           "format": "json"
         },
-        "id": "bf81926a-42f6-4824-a79b-bd69cb0709a2",
+        "id": "d0ce71b2-6c8a-4636-bd85-3d93efc89f9a",
         "policy": "8d2842aa0a8f9b47d0918f7f692d3c045d81cd5f3b344490e7c489a6b5ebda3c",
-        "tool": "evidence.export"
+        "tool": "evidence.export",
+        "argsTruncated": false
       },
       "outcome": "pending",
-      "prev": "3a911f5a3932e962e142d394fe5c9ae518501cf59a431682aeb2971ddd82269f",
+      "prev": "ea75d135118cbf27937eb1279b2284b18f1e952e4aeff908b199305420a28c55",
       "seq": 2,
       "tenant": "sandbox",
-      "hash": "614b8dbd1727278a46672eafe3bf06b8bdc58a5a531fb763683f78effd647f45"
+      "hash": "af71b5c7acbba2031f3f03b448a2fb0362171a32c072549f32fe682151e0b320"
     }
   },
   {
@@ -42,15 +43,15 @@
     "record": {
       "action": "approval.reviewed",
       "actor": "demo-operator",
-      "at": "2026-10-30T14:16:25.940Z",
+      "at": "2026-11-03T20:11:04.724Z",
       "detail": {
-        "id": "bf81926a-42f6-4824-a79b-bd69cb0709a2"
+        "id": "d0ce71b2-6c8a-4636-bd85-3d93efc89f9a"
       },
       "outcome": "approved",
-      "prev": "614b8dbd1727278a46672eafe3bf06b8bdc58a5a531fb763683f78effd647f45",
+      "prev": "af71b5c7acbba2031f3f03b448a2fb0362171a32c072549f32fe682151e0b320",
       "seq": 3,
       "tenant": "sandbox",
-      "hash": "a22bd5c5967bc10752c226e516059683be4b710b0e5449f854890315e6922d8a"
+      "hash": "f3fcc22b58ddf5a4541a4d0cae48fa5f5b6448972d0c14b210cd1f9dd0756fca"
     }
   },
   {
@@ -58,16 +59,16 @@
     "record": {
       "action": "approval.consumed",
       "actor": "demo-agent",
-      "at": "2026-10-30T14:16:25.941Z",
+      "at": "2026-11-03T20:11:04.727Z",
       "detail": {
-        "id": "bf81926a-42f6-4824-a79b-bd69cb0709a2",
-        "requestId": "d10f7e18-ca40-4556-980f-5890317a8800"
+        "id": "d0ce71b2-6c8a-4636-bd85-3d93efc89f9a",
+        "requestId": "5decad67-acee-4995-b475-c7496f9590e7"
       },
       "outcome": "allowed",
-      "prev": "a22bd5c5967bc10752c226e516059683be4b710b0e5449f854890315e6922d8a",
+      "prev": "f3fcc22b58ddf5a4541a4d0cae48fa5f5b6448972d0c14b210cd1f9dd0756fca",
       "seq": 4,
       "tenant": "sandbox",
-      "hash": "249d2362f522b45b2ad9c4748d64426d0ba9bedefd67bcdf955c683b86164410"
+      "hash": "9d75ccbf07a5b1563b89d6cb0390bc95e511ee77fa9b2b00cc85e3710332553d"
     }
   },
   {
@@ -75,19 +76,19 @@
     "record": {
       "action": "tool.intent",
       "actor": "demo-agent",
-      "at": "2026-10-30T14:16:25.941Z",
+      "at": "2026-11-03T20:11:04.727Z",
       "detail": {
         "argsDigest": "9cbf5e203075ce1ea31cbab1a9600b88e80223d2122183bb2fdbc50c24526e3a",
         "policy": "8d2842aa0a8f9b47d0918f7f692d3c045d81cd5f3b344490e7c489a6b5ebda3c",
-        "requestId": "d10f7e18-ca40-4556-980f-5890317a8800",
+        "requestId": "5decad67-acee-4995-b475-c7496f9590e7",
         "rule": "export-review",
         "tool": "evidence.export"
       },
       "outcome": "allowed",
-      "prev": "249d2362f522b45b2ad9c4748d64426d0ba9bedefd67bcdf955c683b86164410",
+      "prev": "9d75ccbf07a5b1563b89d6cb0390bc95e511ee77fa9b2b00cc85e3710332553d",
       "seq": 5,
       "tenant": "sandbox",
-      "hash": "00014241f527c1292f12188baf148298289f52db33ee1282fe14625d830b2158"
+      "hash": "b53f6ff0c88c442753891118347b3ca00f87d477591e6b806694b138405758f4"
     }
   },
   {
@@ -95,16 +96,16 @@
     "record": {
       "action": "tool.completed",
       "actor": "demo-agent",
-      "at": "2026-10-30T14:16:25.941Z",
+      "at": "2026-11-03T20:11:04.728Z",
       "detail": {
-        "requestId": "d10f7e18-ca40-4556-980f-5890317a8800",
+        "requestId": "5decad67-acee-4995-b475-c7496f9590e7",
         "tool": "evidence.export"
       },
       "outcome": "allowed",
-      "prev": "00014241f527c1292f12188baf148298289f52db33ee1282fe14625d830b2158",
+      "prev": "b53f6ff0c88c442753891118347b3ca00f87d477591e6b806694b138405758f4",
       "seq": 6,
       "tenant": "sandbox",
-      "hash": "e1482bc2f2aaae2f06063cbc4ea1de6379c1b8dfc22c1f4ae54c7950932dbaa8"
+      "hash": "a98e408c4be17c5991acabf240b32a109451ce9f743eb0eb7481788567741ef1"
     }
   },
   {
@@ -112,15 +113,15 @@
     "record": {
       "action": "approval.invalid",
       "actor": "demo-agent",
-      "at": "2026-10-30T14:16:25.942Z",
+      "at": "2026-11-03T20:11:04.729Z",
       "detail": {
         "tool": "evidence.export"
       },
       "outcome": "denied",
-      "prev": "e1482bc2f2aaae2f06063cbc4ea1de6379c1b8dfc22c1f4ae54c7950932dbaa8",
+      "prev": "a98e408c4be17c5991acabf240b32a109451ce9f743eb0eb7481788567741ef1",
       "seq": 7,
       "tenant": "sandbox",
-      "hash": "b0e620b4333243e7ad45d72c4e31f405c77bc013118003c372067390e90575db"
+      "hash": "e4153323a8408fb222f344511935cc3d71e9266f9377c5f32a49e8124ffd04d0"
     }
   },
   {
@@ -128,17 +129,17 @@
     "record": {
       "action": "tool.denied",
       "actor": "demo-agent",
-      "at": "2026-10-30T14:16:25.942Z",
+      "at": "2026-11-03T20:11:04.729Z",
       "detail": {
         "policy": "8d2842aa0a8f9b47d0918f7f692d3c045d81cd5f3b344490e7c489a6b5ebda3c",
         "reason": "unknown_tool",
         "tool": "admin.delete"
       },
       "outcome": "denied",
-      "prev": "b0e620b4333243e7ad45d72c4e31f405c77bc013118003c372067390e90575db",
+      "prev": "e4153323a8408fb222f344511935cc3d71e9266f9377c5f32a49e8124ffd04d0",
       "seq": 8,
       "tenant": "sandbox",
-      "hash": "19ea06b8ede556dd37696e6b70d2ec7fbd0f0ce31f682b5926f9e1ee2873fc0f"
+      "hash": "3298b5fb9a72da3004152d3ca0e9d9252e53d74124c5583819a58353d219ba71"
     }
   },
   {
@@ -146,17 +147,17 @@
     "record": {
       "action": "tool.denied",
       "actor": "demo-agent",
-      "at": "2026-10-30T14:16:25.943Z",
+      "at": "2026-11-03T20:11:04.730Z",
       "detail": {
         "policy": "8d2842aa0a8f9b47d0918f7f692d3c045d81cd5f3b344490e7c489a6b5ebda3c",
         "reason": "unknown_tool",
         "tool": "admin.delete"
       },
       "outcome": "denied",
-      "prev": "19ea06b8ede556dd37696e6b70d2ec7fbd0f0ce31f682b5926f9e1ee2873fc0f",
+      "prev": "3298b5fb9a72da3004152d3ca0e9d9252e53d74124c5583819a58353d219ba71",
       "seq": 9,
       "tenant": "sandbox",
-      "hash": "c29a33c3e00e52b5b1f9098b1e33a816b0a6e0819c57116f9ea0d91bdb34f9eb"
+      "hash": "d421a2d0d969b249dce251ae14ccf882897ca6b52898ed95847b7b4675e4a20e"
     }
   },
   {
@@ -164,17 +165,17 @@
     "record": {
       "action": "tool.denied",
       "actor": "demo-agent",
-      "at": "2026-10-30T14:16:25.944Z",
+      "at": "2026-11-03T20:11:04.731Z",
       "detail": {
         "policy": "8d2842aa0a8f9b47d0918f7f692d3c045d81cd5f3b344490e7c489a6b5ebda3c",
         "reason": "unknown_tool",
         "tool": "admin.delete"
       },
       "outcome": "denied",
-      "prev": "c29a33c3e00e52b5b1f9098b1e33a816b0a6e0819c57116f9ea0d91bdb34f9eb",
+      "prev": "d421a2d0d969b249dce251ae14ccf882897ca6b52898ed95847b7b4675e4a20e",
       "seq": 10,
       "tenant": "sandbox",
-      "hash": "33d541c8e5938a36032ece2b561ae21eef4a5bbdee90460ccd7266d0763e3051"
+      "hash": "bf6b49229e44b5b9477331b3541f98ea4056f9c66f6ec8cdfadc41bb326a4b75"
     }
   },
   {
@@ -182,17 +183,17 @@
     "record": {
       "action": "tool.denied",
       "actor": "demo-agent",
-      "at": "2026-10-30T14:16:25.944Z",
+      "at": "2026-11-03T20:11:04.732Z",
       "detail": {
         "policy": "8d2842aa0a8f9b47d0918f7f692d3c045d81cd5f3b344490e7c489a6b5ebda3c",
         "reason": "unknown_tool",
         "tool": "admin.delete"
       },
       "outcome": "denied",
-      "prev": "33d541c8e5938a36032ece2b561ae21eef4a5bbdee90460ccd7266d0763e3051",
+      "prev": "bf6b49229e44b5b9477331b3541f98ea4056f9c66f6ec8cdfadc41bb326a4b75",
       "seq": 11,
       "tenant": "sandbox",
-      "hash": "924ce609ef006de60f6ac86d5e2deab0494f0e5d5a0564224e13b7b2f01ab4f5"
+      "hash": "4b5d55b47121e20589453665a301d19a81b9f1d299086bae0bf7e299c519d3cf"
     }
   },
   {
@@ -200,17 +201,17 @@
     "record": {
       "action": "tool.denied",
       "actor": "demo-agent",
-      "at": "2026-10-30T14:16:25.945Z",
+      "at": "2026-11-03T20:11:04.733Z",
       "detail": {
         "policy": "8d2842aa0a8f9b47d0918f7f692d3c045d81cd5f3b344490e7c489a6b5ebda3c",
         "reason": "unknown_tool",
         "tool": "admin.delete"
       },
       "outcome": "denied",
-      "prev": "924ce609ef006de60f6ac86d5e2deab0494f0e5d5a0564224e13b7b2f01ab4f5",
+      "prev": "4b5d55b47121e20589453665a301d19a81b9f1d299086bae0bf7e299c519d3cf",
       "seq": 12,
       "tenant": "sandbox",
-      "hash": "58b695fbc3c4eff43de5a9f8fa0249d6759ce65087e37a177672099b68d0d0c9"
+      "hash": "01e9ddff91524d45f8548245308e4ca537a1a430e7f5bac8f49fd752f11d58cd"
     }
   }
 ]

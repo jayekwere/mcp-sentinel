@@ -1,140 +1,176 @@
 #0 building with "desktop-linux" instance using docker driver
 
 #1 [internal] load build definition from Dockerfile
-#1 transferring dockerfile: 987B 0.0s done
+#1 transferring dockerfile: 1.04kB done
 #1 DONE 0.0s
 
-#2 [internal] load metadata for docker.io/library/node:24-alpine@sha256:8a32c8cf649a49915a66e81e7a609223c708d0adabf288ee3f4077d765542f85
-#2 DONE 0.1s
+#2 [internal] load metadata for gcr.io/distroless/nodejs24-debian13:nonroot@sha256:b8cec4b2f2126ff7bd034ec9ac207ffb3272667dfdc48376e3b035d3270549ba
+#2 DONE 0.0s
 
-#3 [internal] load .dockerignore
-#3 transferring context: 125B 0.0s done
+#3 [internal] load metadata for docker.io/library/node:24-alpine@sha256:8a32c8cf649a49915a66e81e7a609223c708d0adabf288ee3f4077d765542f85
 #3 DONE 0.0s
 
-#4 [build 1/7] FROM docker.io/library/node:24-alpine@sha256:8a32c8cf649a49915a66e81e7a609223c708d0adabf288ee3f4077d765542f85
-#4 resolve docker.io/library/node:24-alpine@sha256:8a32c8cf649a49915a66e81e7a609223c708d0adabf288ee3f4077d765542f85 0.0s done
+#4 [internal] load .dockerignore
+#4 transferring context: 116B done
 #4 DONE 0.0s
 
-#5 [internal] load build context
-#5 transferring context: 304.67kB 0.1s done
-#5 DONE 0.1s
+#5 [build 1/7] FROM docker.io/library/node:24-alpine@sha256:8a32c8cf649a49915a66e81e7a609223c708d0adabf288ee3f4077d765542f85
+#5 resolve docker.io/library/node:24-alpine@sha256:8a32c8cf649a49915a66e81e7a609223c708d0adabf288ee3f4077d765542f85 0.0s done
+#5 DONE 0.0s
 
-#6 [build 2/7] WORKDIR /app
-#6 CACHED
+#6 [runtime 1/6] FROM gcr.io/distroless/nodejs24-debian13:nonroot@sha256:b8cec4b2f2126ff7bd034ec9ac207ffb3272667dfdc48376e3b035d3270549ba
+#6 resolve gcr.io/distroless/nodejs24-debian13:nonroot@sha256:b8cec4b2f2126ff7bd034ec9ac207ffb3272667dfdc48376e3b035d3270549ba 0.0s done
+#6 DONE 0.0s
 
-#7 [build 3/7] COPY package.json package-lock.json ./
-#7 DONE 0.1s
+#7 [internal] load build context
+#7 transferring context: 174.36kB 0.0s done
+#7 DONE 0.0s
 
-#8 [build 4/7] RUN npm ci --ignore-scripts
-#8 9.956
-#8 9.956 added 149 packages, and audited 150 packages in 5s
-#8 9.956
-#8 9.956 54 packages are looking for funding
-#8 9.956   run `npm fund` for details
-#8 9.957
-#8 9.957 found 0 vulnerabilities
-#8 9.958 npm notice
-#8 9.958 npm notice New major version of npm available! 11.19.1 -> 12.2.1
-#8 9.958 npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
-#8 9.958 npm notice To update run: npm install -g npm@12.2.1
-#8 9.958 npm notice
-#8 DONE 10.2s
+#8 [build 3/7] COPY package.json package-lock.json ./
+#8 CACHED
 
-#9 [build 5/7] COPY . .
-#9 DONE 0.2s
+#9 [build 2/7] WORKDIR /app
+#9 CACHED
 
-#10 [build 6/7] RUN npm run typecheck && npm test && npm run build
-#10 0.327
-#10 0.327 > mcp-sentinel@1.0.0 typecheck
-#10 0.327 > tsc --noEmit && tsc -p tsconfig.web.json
-#10 0.327
-#10 1.866
-#10 1.866 > mcp-sentinel@1.0.0 test
-#10 1.866 > node --import tsx --test --test-concurrency=1 test/*.test.ts
-#10 1.866
-#10 2.503 ✔ HTTP boundary rejects missing tokens, untrusted hosts, cross origins, large bodies, and analyst calls (89.797875ms)
-#10 2.511 ✔ subject rate limits apply to authenticated API requests (8.074625ms)
-#10 2.640 ✔ official SDK client initializes, lists scoped tools, executes, and receives denial over HTTP (128.478667ms)
-#10 2.661 ✔ REST review and audit endpoints restrict roles and tenant records (21.312208ms)
-#10 3.099 ✔ deny by default, role and agent boundaries, tool catalog filtering (14.047625ms)
-#10 3.099 ✔ explicit deny dominates allow and approval, exact matches avoid wildcard grants (0.302709ms)
-#10 3.101 ✔ unexpected and malformed tool arguments never reach execution (2.612833ms)
-#10 3.103 ✔ approval lifecycle requires independent review and consumes exactly once (4.693792ms)
-#10 3.103 ✔ approval binding rejects changed arguments (2.010042ms)
-#10 3.103 ✔ approval binding rejects changed actor (1.126209ms)
-#10 3.103 ✔ approval binding rejects changed agent (1.399875ms)
-#10 3.104 ✔ approval binding rejects changed policy (1.701791ms)
-#10 3.104 ✔ expiry, rejection, and repeat review are enforced (3.551375ms)
-#10 3.104 ✔ concurrent approval reuse results in one execution (4.233292ms)
-#10 3.105 ✔ approval consumption survives process restart (47.165542ms)
-#10 3.105 ✔ executor failure consumes approval and records failure without its exception message (2.86775ms)
-#10 3.105 ✔ pending approval queue is bounded and denial burst detection expires (11.979459ms)
-#10 3.106 ✔ aws export adapter validates its documented fields (1.992917ms)
-#10 3.106 ✔ azure export adapter validates its documented fields (0.900958ms)
-#10 3.107 ✔ gcp export adapter validates its documented fields (1.091625ms)
-#10 3.383 ✔ valid asymmetric access token maps to the server registry (21.133833ms)
-#10 3.384 ✔ token contract: issuer (1.808666ms)
-#10 3.385 ✔ token contract: audience (0.973208ms)
-#10 3.386 ✔ token contract: expired (1.077375ms)
-#10 3.387 ✔ token contract: future (0.941167ms)
-#10 3.388 ✔ token contract: lifetime (0.796833ms)
-#10 3.389 ✔ token contract: subject (0.693667ms)
-#10 3.390 ✔ token contract: type (0.81925ms)
-#10 3.392 ✔ token contract: jti (1.085958ms)
-#10 3.393 ✔ token contract: forged-role (1.34ms)
-#10 3.395 ✔ invalid headers, unsigned payloads, and foreign signing keys fail closed (1.874833ms)
-#10 3.419 ✔ private keys and ambiguous identities are rejected at configuration (0.918ms)
-#10 3.419 ✔ canonical request digest ignores object key order and preserves array order (0.381833ms)
-#10 3.419 ✔ rate limits include bounded key capacity and window expiry (0.173834ms)
-#10 3.419 ✔ audit detects edited content, removed middle records, and wrong keys on reopen (19.912916ms)
-#10 3.419 ✔ database transaction rolls back intent and state together (1.046458ms)
-#10 3.446 ✔ RS256 public verification and audit content-edit detection (28.320958ms)
-#10 4.070 ✔ fixed upstream enforces descriptor pin, credential separation, and no execution after metadata drift (150.6125ms)
-#10 4.070 ✔ untrusted URL shapes are rejected even for demo upstreams (0.504125ms)
-#10 4.096 ℹ tests 39
-#10 4.096 ℹ suites 0
-#10 4.096 ℹ pass 39
-#10 4.096 ℹ fail 0
-#10 4.096 ℹ cancelled 0
-#10 4.096 ℹ skipped 0
-#10 4.096 ℹ todo 0
-#10 4.096 ℹ duration_ms 2203.065584
-#10 4.206
-#10 4.206 > mcp-sentinel@1.0.0 build
-#10 4.206 > tsc && node scripts/build-web.mjs
-#10 4.206
-#10 DONE 4.7s
+#10 [build 4/7] RUN npm ci --ignore-scripts
+#10 CACHED
 
-#11 [build 7/7] RUN npm prune --omit=dev --ignore-scripts
-#11 2.621
-#11 2.621 removed 11 packages, and audited 139 packages in 2s
-#11 2.621
-#11 2.622 53 packages are looking for funding
-#11 2.622   run `npm fund` for details
-#11 2.622
-#11 2.622 found 0 vulnerabilities
-#11 DONE 2.6s
+#11 [build 5/7] COPY . .
+#11 DONE 0.1s
 
-#12 [runtime 3/6] COPY --from=build /app/node_modules ./node_modules
-#12 CACHED
+#12 [build 6/7] RUN npm run typecheck && npm test && npm run build
+#12 0.518
+#12 0.518 > mcp-sentinel@1.1.0 typecheck
+#12 0.518 > tsc --noEmit && tsc -p tsconfig.web.json
+#12 0.518
+#12 1.537
+#12 1.537 > mcp-sentinel@1.1.0 test
+#12 1.537 > node --import tsx --test --test-concurrency=1 test/*.test.ts
+#12 1.537
+#12 2.136 ✔ HTTP boundary rejects missing tokens, untrusted hosts, cross origins, large bodies, and analyst calls (95.021667ms)
+#12 2.145 ✔ subject rate limits apply to authenticated API requests (9.540458ms)
+#12 2.292 ✔ official SDK client initializes, lists scoped tools, executes, and receives denial over HTTP (146.796333ms)
+#12 2.315 ✔ REST review and audit endpoints restrict roles and tenant records (23.166ms)
+#12 3.201 ✔ bounds unauthenticated audit flooding from 1000 bad tokens (208.481625ms)
+#12 3.201 ✔ incremental verification rejects a tampered newer audit row (0.832292ms)
+#12 3.247 ✔ rejects blind review of legacy approvals during migration (45.461291ms)
+#12 3.327 ✔ prevents blind approval of custom cloud summary policy and binds every argument (81.892542ms)
+#12 3.348 ✔ rejects revoked token jti and revoked subject without making tokens one time use (21.221542ms)
+#12 3.362 ✔ revokes every accepted token ID including IDs longer than 200 characters (8.756291ms)
+#12 3.367 ✔ rejects unusable verification keys on auth reload (10.518375ms)
+#12 3.402 ✔ invalid auth reload keeps the old configuration and audits both outcomes (3.949208ms)
+#12 3.934 ✔ rejects upstream descriptor drift in annotations (559.183667ms)
+#12 3.988 ✔ rejects upstream descriptor drift in outputSchema (55.868541ms)
+#12 4.005 ✔ rejects upstream descriptor drift in title (17.077875ms)
+#12 4.021 ✔ rejects upstream descriptor drift in unknown (16.330292ms)
+#12 4.053 ✔ rejects upstream image content (27.11ms)
+#12 4.067 ✔ rejects upstream audio content (18.525208ms)
+#12 4.084 ✔ rejects upstream resource content (16.315667ms)
+#12 4.101 ✔ rejects upstream resource_link content (16.919792ms)
+#12 4.124 ✔ rejects upstream outputSchema mismatch and missing structured content (23.8655ms)
+#12 4.143 ✔ redacts and audits upstream aws-access-key secrets (18.245125ms)
+#12 4.158 ✔ redacts and audits upstream pem-private-key secrets (14.381833ms)
+#12 4.172 ✔ redacts and audits upstream jwt secrets (14.801208ms)
+#12 4.694 ✔ redacts and audits upstream github-token secrets (12.926209ms)
+#12 4.695 ✔ prevents group and world access to SQLite database WAL and SHM files (22.649875ms)
+#12 4.695 ✔ rejects a second database writer in this process and another process (484.96525ms)
+#12 4.695 ✔ rolls back standalone audit side effects and supports an existing transaction (1.467583ms)
+#12 4.787 ✔ overview pending total is an integer (15.876334ms)
+#12 4.787 ✔ checkpoint blocks tail rollback at startup (48.4415ms)
+#12 4.787 ✔ checkpoint blocks forged signature at startup (28.728833ms)
+#12 4.792 ✔ exports each detection once by rule and audit evidence across repeated reads (4.845291ms)
+#12 4.799 ✔ webhook failure is audited without breaking tool calls (6.539833ms)
+#12 4.833 ✔ denial burst containment rearms after expiry (29.662209ms)
+#12 4.867 ✔ denial burst containment rearms after operator lift (37.785ms)
+#12 4.911 ✔ denial burst suspension blocks all API and MCP requests (44.317167ms)
+#12 4.932 ✔ denial burst suspension expires (21.945ms)
+#12 6.140 ✔ denial burst suspension operator lifts early (24.245416ms)
+#12 6.141 ✔ prevents mutable GitHub Action references and broad workflow token permissions (1.042ms)
+#12 6.145 ✔ release requires tag-scoped keyless signing SPDX SBOM and provenance (0.260458ms)
+#12 6.145 ✔ runtime image uses a pinned minimal non-root Node 24 base and an exec healthcheck (0.178333ms)
+#12 6.145 ✔ offline audit and checkpoint commands verify real files and fail on tampering (1180.149543ms)
+#12 6.671 ✔ upstream pin command prints the actual full descriptor hash (531.893792ms)
+#12 7.395 ✔ SIGHUP rejects invalid files keeps old authentication and applies a valid reload (722.646208ms)
+#12 7.788 ✔ deny by default, role and agent boundaries, tool catalog filtering (10.668208ms)
+#12 7.788 ✔ explicit deny dominates allow and approval, exact matches avoid wildcard grants (0.319375ms)
+#12 7.789 ✔ unexpected and malformed tool arguments never reach execution (2.789708ms)
+#12 7.790 ✔ approval lifecycle requires independent review and consumes exactly once (4.363292ms)
+#12 7.790 ✔ approval binding rejects changed arguments (2.221ms)
+#12 7.791 ✔ approval binding rejects changed actor (1.902542ms)
+#12 7.791 ✔ approval binding rejects changed agent (1.826708ms)
+#12 7.792 ✔ approval binding rejects changed policy (2.111125ms)
+#12 7.792 ✔ expiry, rejection, and repeat review are enforced (3.618625ms)
+#12 7.793 ✔ concurrent approval reuse results in one execution (6.307666ms)
+#12 7.794 ✔ approval consumption survives process restart (36.294292ms)
+#12 7.794 ✔ executor failure consumes approval and records failure without its exception message (2.546917ms)
+#12 7.794 ✔ pending approval queue is bounded and denial burst detection expires (16.622ms)
+#12 7.795 ✔ aws export adapter validates its documented fields (1.60975ms)
+#12 7.795 ✔ azure export adapter validates its documented fields (0.969875ms)
+#12 7.795 ✔ gcp export adapter validates its documented fields (0.733417ms)
+#12 8.210 ✔ valid asymmetric access token maps to the server registry (25.135625ms)
+#12 8.212 ✔ token contract: issuer (2.897875ms)
+#12 8.214 ✔ token contract: audience (1.469791ms)
+#12 8.216 ✔ token contract: expired (1.282042ms)
+#12 8.217 ✔ token contract: future (1.472292ms)
+#12 8.219 ✔ token contract: lifetime (1.390958ms)
+#12 8.220 ✔ token contract: subject (0.912542ms)
+#12 8.221 ✔ token contract: type (1.148583ms)
+#12 8.222 ✔ token contract: jti (1.585666ms)
+#12 8.224 ✔ token contract: forged-role (0.984791ms)
+#12 8.226 ✔ invalid headers, unsigned payloads, and foreign signing keys fail closed (1.5115ms)
+#12 8.263 ✔ private keys and ambiguous identities are rejected at configuration (3.538375ms)
+#12 8.264 ✔ canonical request digest ignores object key order and preserves array order (0.3455ms)
+#12 8.264 ✔ rate limits include bounded key capacity and window expiry (0.182042ms)
+#12 8.264 ✔ audit detects edited content, removed middle records, and wrong keys on reopen (31.859833ms)
+#12 8.264 ✔ database transaction rolls back intent and state together (1.061042ms)
+#12 8.311 ✔ RS256 public verification and audit content-edit detection (48.323708ms)
+#12 9.201 ✔ fixed upstream enforces descriptor pin, credential separation, and no execution after metadata drift (155.071459ms)
+#12 9.202 ✔ untrusted URL shapes are rejected even for demo upstreams (0.514042ms)
+#12 9.243 ℹ tests 79
+#12 9.243 ℹ suites 0
+#12 9.243 ℹ pass 79
+#12 9.243 ℹ fail 0
+#12 9.243 ℹ cancelled 0
+#12 9.243 ℹ skipped 0
+#12 9.243 ℹ todo 0
+#12 9.243 ℹ duration_ms 7677.812878
+#12 9.411
+#12 9.411 > mcp-sentinel@1.1.0 build
+#12 9.411 > tsc && node scripts/build-web.mjs
+#12 9.411
+#12 DONE 10.2s
 
-#13 [runtime 4/6] COPY --from=build /app/package.json /app/package-lock.json ./
-#13 DONE 0.0s
+#13 [build 7/7] RUN npm prune --omit=dev --ignore-scripts
+#13 2.158
+#13 2.158 removed 11 packages, and audited 139 packages in 2s
+#13 2.158
+#13 2.159 53 packages are looking for funding
+#13 2.159   run `npm fund` for details
+#13 2.160
+#13 2.160 found 0 vulnerabilities
+#13 DONE 2.2s
 
-#14 [runtime 5/6] COPY --from=build /app/dist/src ./dist/src
-#14 DONE 0.0s
+#14 [runtime 2/6] WORKDIR /app
+#14 CACHED
 
-#15 [runtime 6/6] COPY --from=build /app/dist/web ./dist/web
-#15 DONE 0.0s
+#15 [runtime 3/6] COPY --from=build /app/node_modules ./node_modules
+#15 CACHED
 
-#16 exporting to image
-#16 exporting layers 0.1s done
-#16 exporting manifest sha256:4b02efb4055776747f8234b5d53b2aa90c4e7decb6a07ea61c8c5e80322b05c9 0.0s done
-#16 exporting config sha256:075b201359c7b0d03198f93b42e53e086bc494730a1113ce2c9a26a987298215 done
-#16 exporting attestation manifest sha256:e8864fdd397522b4851acc48c93194283e10305c8c4a079385091c74393c8ab9
-#16 exporting attestation manifest sha256:e8864fdd397522b4851acc48c93194283e10305c8c4a079385091c74393c8ab9 0.0s done
-#16 exporting manifest list sha256:e315b6b1a4daff2a76e3e70b9b662cc6de38214d9da892b2b9236cfa4270c861 done
-#16 naming to docker.io/library/mcp-sentinel:local done
-#16 unpacking to docker.io/library/mcp-sentinel:local
-#16 unpacking to docker.io/library/mcp-sentinel:local 0.2s done
-#16 DONE 0.4s
+#16 [runtime 4/6] COPY --from=build /app/package.json /app/package-lock.json ./
+#16 CACHED
+
+#17 [runtime 5/6] COPY --from=build /app/dist/src ./dist/src
+#17 CACHED
+
+#18 [runtime 6/6] COPY --from=build /app/dist/web ./dist/web
+#18 CACHED
+
+#19 exporting to image
+#19 exporting layers done
+#19 exporting manifest sha256:0424fe1c36ff2914582c91a10de30f35fdeed88540c25670713e095f7664447a done
+#19 exporting config sha256:aaf1fb8df3b2ab7a6629e2222a5cf06dbbaf76d9db6f76a0cde7286f778c7121 done
+#19 exporting attestation manifest sha256:aeadd5759201b967d86ba6792c8aba9389dc790ca2a6616c229930a936429e6a 0.0s done
+#19 exporting manifest list sha256:d0c90592f8a4b044384572692990c181f2b4e1f579e8e1cf5d8a45bc990c9a50 done
+#19 naming to docker.io/library/mcp-sentinel:local done
+#19 unpacking to docker.io/library/mcp-sentinel:local done
+#19 DONE 0.1s

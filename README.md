@@ -2,7 +2,7 @@
 
 **A cloud-agnostic security boundary for MCP tool calls.**
 
-Authenticate a registered agent, authorize its exact tool, validate arguments, require independent approval where configured, and record the decision before execution. Includes a real Streamable HTTP MCP endpoint, a REST API, a schema-pinned upstream MCP adapter, cloud-export summary tools, and an evidence dashboard.
+Authenticate a registered agent, authorize its exact tool, validate arguments, require independent approval where configured, and record the decision before execution. Includes a real Streamable HTTP MCP endpoint, a REST API, a descriptor-pinned upstream MCP adapter, cloud-export summary tools, and an evidence dashboard.
 
 [![Verify](https://github.com/jayekwere/mcp-sentinel/actions/workflows/verify.yml/badge.svg)](https://github.com/jayekwere/mcp-sentinel/actions/workflows/verify.yml) [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/jayekwere/mcp-sentinel/badge)](https://scorecard.dev/viewer/?uri=github.com/jayekwere/mcp-sentinel) [MIT](LICENSE)
 
@@ -46,18 +46,18 @@ The excerpt omits the returned synthetic evidence payload and signal list. The c
 
 ## Enforced behavior
 
-| Boundary      | Implemented behavior                                                                                                                                              |
-| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Identity      | ES256/RS256 access-token verification, issuer, audience, expiry, maximum age, required claims, registered subject                                                 |
-| Authorization | Exact tenant, agent, role, and tool matches; explicit deny wins; unmatched requests deny                                                                          |
-| Input         | Strict tool argument schemas, bounded requests, no caller-selected endpoint or command                                                                            |
-| Approval      | Independent same-tenant operator; five-minute expiry; binding to actor, tenant, agent, canonical arguments, tool schema, policy hash, and execution configuration |
-| Concurrency   | Transactional one-time consumption before execution; consumed approvals remain consumed after errors or restart                                                   |
-| Audit         | Durable intent and outcome events, request IDs, argument digests, policy fingerprints, authenticated hash chain                                                   |
-| MCP           | Official SDK stateless Streamable HTTP; initialize, scoped tools/list, tools/call; REST and MCP share the same gateway                                            |
-| Upstream      | Fixed HTTPS endpoint, dedicated credential, pinned name/description/input schema, no redirects, deadlines and response bounds                                     |
-| Detection     | Five tool denials in sixty seconds, invalid approval use, and execution failures, with audit references                                                           |
-| Browser       | Tenant-scoped ledger, approvals, signals, live playground, responsive layout, safe text rendering                                                                 |
+| Boundary      | Implemented behavior                                                                                                                                                                                                         |
+| ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Identity      | ES256/RS256 access-token verification, issuer, audience, expiry, maximum age, required claims, registered subject, tenant-scoped token and subject revocation, validated SIGHUP reload                                       |
+| Authorization | Exact tenant, agent, role, and tool matches; explicit deny wins; unmatched requests deny                                                                                                                                     |
+| Input         | Strict tool argument schemas, bounded requests, no caller-selected endpoint or command                                                                                                                                       |
+| Approval      | Independent same-tenant operator; five-minute expiry; binding to actor, tenant, agent, canonical arguments, tool schema, policy hash, and execution configuration; full arguments retained for review, 4 KiB marked previews |
+| Concurrency   | Transactional one-time consumption before execution; consumed approvals remain consumed after errors or restart                                                                                                              |
+| Audit         | Durable intent and outcome events, request IDs, argument digests, policy fingerprints, authenticated hash chain, incremental request checks, full offline verification and signed external checkpoints                       |
+| MCP           | Official SDK stateless Streamable HTTP; initialize, scoped tools/list, tools/call; REST and MCP share the same gateway                                                                                                       |
+| Upstream      | Fixed HTTPS endpoint, dedicated credential, complete descriptor pins, text-only results, output-schema validation, deterministic secret redaction, no redirects, deadlines and response bounds                               |
+| Detection     | Five tool denials in sixty seconds, invalid approval use, and execution failures, with audit references; deduplicated OCSF export and optional subject suspension                                                            |
+| Browser       | Tenant-scoped ledger, approval argument previews, suspensions, signals, live playground, responsive layout, safe text rendering                                                                                              |
 
 The default policy grants the `researcher` agent in tenant `sandbox` access to two read tools and approval-gated evidence export. It grants no tools to operators or analysts. Operators review requests, and analysts inspect audit evidence. Configure a reviewed policy file with `POLICY_FILE` to change tool grants. Rules have no implicit wildcard syntax.
 
@@ -111,9 +111,11 @@ Run `npm test` for security, API, SDK interoperability, persistence, concurrency
 
 ## Limits
 
-This is a single-node reference service with production-style controls, not a certified or independently audited production platform. Bearer-token theft still permits use until expiry. There is no proof of possession, automatic JWKS rotation, browser OAuth login, or immediate revocation service. A configured signed external checkpoint detects rollback past its last sequence; events written after that checkpoint can still be removed without detection. Protect the checkpoint and its verification key independently of the database. Detection windows inspect at most the latest 1,000 tenant audit entries, so high-volume bursts can be undercounted. Rate limits are per process. There is no automatic retention or high availability.
+This is a single-writer reference service with production-style controls, not a certified or independently audited production platform. Bearer tokens remain reusable until expiry, revocation, or subject suspension. There is no proof of possession, automatic JWKS refresh, or browser OAuth login. SIGHUP reload requires an operator-managed configuration. A configured signed external checkpoint detects rollback past its last sequence; events written after it can still be removed. Protect checkpoints and verification-key configuration independently of the database. Cached request-time verification checks new audit rows; detecting historical edits behind the cache requires startup or `npm run audit:verify`. A host administrator with the audit key can forge the chain.
 
-The upstream adapter maps only the three declared local tools; it is not a transparent proxy for arbitrary MCP servers. Descriptor pins do not prove a server's runtime behavior. Output is untrusted data and is not scanned for every prompt-injection or exfiltration pattern. Pinned descriptions prevent unnoticed metadata drift, not malicious behavior behind unchanged metadata. Network egress policy belongs at the deployment boundary.
+Detection counts inspect at most the latest 1,000 tenant audit rows within sixty seconds. Rate limits and containment operate on one process. Detection export is at most once, with no retries or delivery guarantee. Unauthenticated failures share one bounded counter and emit at most one aggregate per sixty-second window, so a crash can lose the current counter. There is no automatic retention or high availability.
+
+The upstream adapter maps only the three declared local tools. Complete descriptor pins detect metadata drift and don't attest runtime behavior. Text-only content, pinned output schemas and four secret-pattern controls don't detect prompt injection or every secret format. Returned text remains untrusted. Full approval arguments can contain sensitive data, and previews over 4 KiB are marked as truncated. Review the protected complete record before approving such a request. Network egress restrictions belong at the deployment boundary.
 
 See [SECURITY.md](SECURITY.md) for reporting and [CONTRIBUTING.md](CONTRIBUTING.md) for changes. Licensed under [MIT](LICENSE).
 

@@ -35,3 +35,11 @@ Typical REST errors: 400 invalid request, 401 invalid token, 403 forbidden/polic
 The dashboard shows bounded recent evidence. Totals count only the fetched recent 200 entries, not all-time service traffic. The pending count is a current tenant database count. Detection signals inspect the latest 1,000 tenant entries within a sixty-second window.
 
 `GET /api/overview` returns integer totals, for example `"totals":{"allowed":2,"denied":1,"pending":0}`. Version 1.1 changes `totals.pending` from `{n:number}` to `number`.
+
+`POST /api/revocations` requires an operator and strict `{kind:"jti"|"subject",value,subject,expiresAt}`. The subject must belong to the operator's tenant. Subject values must equal the subject; token IDs may contain up to 8192 characters to cover every token accepted by the header bound. Subjects are limited to 200 characters. Expiry must be in the future and within one year. Accepted revocations return 201 and are audited. Revoked credentials return `401 invalid_token`.
+
+`POST /api/suspensions/lift` requires a same-tenant active operator and strict `{"subject":"demo-agent"}`. It returns `{"status":"active"}` and audits the release. Missing or cross-tenant records return 404. The overview adds `suspensions:[{subject,expires,evidence}]` with numeric expiry milliseconds. Suspended subjects receive `403 subject_suspended` on all API and MCP requests, including discovery and encoded route aliases.
+
+Approval list `request.args` contains the real argument object when its canonical representation fits 4096 UTF-8 bytes; otherwise it contains a prefix string. `request.argsTruncated` marks truncation. Audit API previews use the same bound. The database retains the complete canonical request. Existing pending and approved requests without reviewer arguments are invalidated during migration and must be requested again.
+
+Upstream control errors return stable 502 codes through REST and `isError` results through MCP: `upstream_content_rejected`, `upstream_output_schema_invalid`, `upstream_descriptor_changed`, `upstream_result_too_large`, `upstream_tool_error`, and `upstream_catalog_requires_pagination`. Unexpected executor errors remain `tool_failed` without exception details.

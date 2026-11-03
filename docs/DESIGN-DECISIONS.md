@@ -6,7 +6,7 @@ Use strict TypeScript, a typed schema boundary, an HTTP server, a small browser 
 
 ## 002: Server-owned identity mapping
 
-Validate access-token signatures and claim constraints, then map the subject through an operator-managed registry. Ignore token-supplied application roles and tenant labels. A compromised low-privilege client cannot promote itself by changing those claims. The tradeoff is explicit provisioning and restart-based mapping changes.
+Validate access-token signatures and claim constraints, then map the subject through an operator-managed registry. Ignore token-supplied application roles and tenant labels. A compromised low-privilege client cannot promote itself by changing those claims. The tradeoff is explicit provisioning and validated operator-driven mapping reloads.
 
 ## 003: No dynamic credential or endpoint routing
 
@@ -14,7 +14,7 @@ The application does not accept a target URL, cloud credential, shell command, o
 
 ## 004: Inspectable evidence
 
-Keep versioned rules, request fingerprints, audit sequence information, and event evidence visible. Do not retain complete raw cloud records or arbitrary tool arguments in the audit trail. No model-generated explanation is used to authorize a request or decide whether a deterministic rule matched. Descriptions communicate what the rule observed and leave intent assessment to an investigator.
+Keep versioned rules, request fingerprints, audit sequence information, and event evidence visible. Execution events retain argument digests. Approval requests retain full canonical arguments so operators can review the exact request; protect these records as sensitive data. No model-generated explanation is used to authorize a request or decide whether a deterministic rule matched. Descriptions communicate what the rule observed and leave intent assessment to an investigator.
 
 ## 005: Minimal browser state
 

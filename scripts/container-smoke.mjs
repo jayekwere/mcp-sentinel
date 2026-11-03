@@ -39,6 +39,15 @@ try {
     await new Promise((r) => setTimeout(r, 250));
   }
   assert.ok(ready, 'Container became healthy');
+  let healthcheck = false;
+  for (let i = 0; i < 80; i++) {
+    if (docker(['inspect', '--format', '{{.State.Health.Status}}', name]) === 'healthy') {
+      healthcheck = true;
+      break;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 250));
+  }
+  assert.ok(healthcheck, 'Exec-form distroless healthcheck passed');
   const runtime = JSON.parse(
     docker([
       'exec',

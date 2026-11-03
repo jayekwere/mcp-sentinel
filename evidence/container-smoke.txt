@@ -1,1 +1,1 @@
-PASS: non-root read-only container, health, authentication, approval, execution, and replay rejection
+PASS: non-root read-only Node 24 distroless container without package managers, health, authentication, approval, execution, and replay rejection

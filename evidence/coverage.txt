@@ -1,69 +1,118 @@
 
-> mcp-sentinel@1.0.0 test:coverage
+> mcp-sentinel@1.1.0 test:coverage
 > node --experimental-test-coverage --import tsx --test --test-concurrency=1 test/*.test.ts
 
-✔ HTTP boundary rejects missing tokens, untrusted hosts, cross origins, large bodies, and analyst calls (82.729916ms)
-✔ subject rate limits apply to authenticated API requests (4.542083ms)
-✔ official SDK client initializes, lists scoped tools, executes, and receives denial over HTTP (90.864083ms)
-✔ REST review and audit endpoints restrict roles and tenant records (14.64975ms)
-✔ deny by default, role and agent boundaries, tool catalog filtering (9.324208ms)
-✔ explicit deny dominates allow and approval, exact matches avoid wildcard grants (0.142375ms)
-✔ unexpected and malformed tool arguments never reach execution (1.492667ms)
-✔ approval lifecycle requires independent review and consumes exactly once (3.494333ms)
-✔ approval binding rejects changed arguments (1.396958ms)
-✔ approval binding rejects changed actor (0.859791ms)
-✔ approval binding rejects changed agent (0.677834ms)
-✔ approval binding rejects changed policy (0.709542ms)
-✔ expiry, rejection, and repeat review are enforced (1.308833ms)
-✔ concurrent approval reuse results in one execution (3.115416ms)
-✔ approval consumption survives process restart (13.818833ms)
-✔ executor failure consumes approval and records failure without its exception message (1.430583ms)
-✔ pending approval queue is bounded and denial burst detection expires (6.048958ms)
-✔ aws export adapter validates its documented fields (1.325042ms)
-✔ azure export adapter validates its documented fields (0.636125ms)
-✔ gcp export adapter validates its documented fields (0.548209ms)
-✔ valid asymmetric access token maps to the server registry (11.966333ms)
-✔ token contract: issuer (1.931875ms)
-✔ token contract: audience (0.785792ms)
-✔ token contract: expired (0.715209ms)
-✔ token contract: future (0.612208ms)
-✔ token contract: lifetime (0.518833ms)
-✔ token contract: subject (0.416625ms)
-✔ token contract: type (0.367959ms)
-✔ token contract: jti (0.392ms)
-✔ token contract: forged-role (0.469333ms)
-✔ invalid headers, unsigned payloads, and foreign signing keys fail closed (0.972458ms)
-✔ private keys and ambiguous identities are rejected at configuration (0.643583ms)
-✔ canonical request digest ignores object key order and preserves array order (0.259834ms)
-✔ rate limits include bounded key capacity and window expiry (0.174ms)
-✔ audit detects edited content, removed middle records, and wrong keys on reopen (7.503375ms)
-✔ database transaction rolls back intent and state together (0.380625ms)
-✔ RS256 public verification and audit content-edit detection (34.111ms)
-✔ fixed upstream enforces descriptor pin, credential separation, and no execution after metadata drift (141.014958ms)
-✔ untrusted URL shapes are rejected even for demo upstreams (0.354458ms)
-ℹ tests 39
+✔ HTTP boundary rejects missing tokens, untrusted hosts, cross origins, large bodies, and analyst calls (74.333042ms)
+✔ subject rate limits apply to authenticated API requests (6.042333ms)
+✔ official SDK client initializes, lists scoped tools, executes, and receives denial over HTTP (217.098041ms)
+✔ REST review and audit endpoints restrict roles and tenant records (21.144334ms)
+✔ bounds unauthenticated audit flooding from 1000 bad tokens (189.104333ms)
+✔ incremental verification rejects a tampered newer audit row (1.018375ms)
+✔ rejects blind review of legacy approvals during migration (30.875083ms)
+✔ prevents blind approval of custom cloud summary policy and binds every argument (49.744458ms)
+✔ rejects revoked token jti and revoked subject without making tokens one time use (15.087042ms)
+✔ revokes every accepted token ID including IDs longer than 200 characters (6.115417ms)
+✔ rejects unusable verification keys on auth reload (6.987959ms)
+✔ invalid auth reload keeps the old configuration and audits both outcomes (3.39825ms)
+✔ rejects upstream descriptor drift in annotations (108.297792ms)
+✔ rejects upstream descriptor drift in outputSchema (24.827583ms)
+✔ rejects upstream descriptor drift in title (15.061125ms)
+✔ rejects upstream descriptor drift in unknown (20.553166ms)
+✔ rejects upstream image content (13.763708ms)
+✔ rejects upstream audio content (10.898459ms)
+✔ rejects upstream resource content (12.616375ms)
+✔ rejects upstream resource_link content (11.339291ms)
+✔ rejects upstream outputSchema mismatch and missing structured content (32.283875ms)
+✔ redacts and audits upstream aws-access-key secrets (12.172791ms)
+✔ redacts and audits upstream pem-private-key secrets (11.880083ms)
+✔ redacts and audits upstream jwt secrets (12.28375ms)
+✔ redacts and audits upstream github-token secrets (10.660375ms)
+✔ prevents group and world access to SQLite database WAL and SHM files (3.99825ms)
+✔ rejects a second database writer in this process and another process (329.559916ms)
+✔ rolls back standalone audit side effects and supports an existing transaction (0.810542ms)
+✔ overview pending total is an integer (6.307666ms)
+✔ checkpoint blocks tail rollback at startup (22.951958ms)
+✔ checkpoint blocks forged signature at startup (6.017167ms)
+✔ exports each detection once by rule and audit evidence across repeated reads (3.00175ms)
+✔ webhook failure is audited without breaking tool calls (2.644292ms)
+✔ denial burst containment rearms after expiry (5.488375ms)
+✔ denial burst containment rearms after operator lift (7.077833ms)
+✔ denial burst suspension blocks all API and MCP requests (12.870125ms)
+✔ denial burst suspension expires (17.662958ms)
+✔ denial burst suspension operator lifts early (14.671917ms)
+✔ prevents mutable GitHub Action references and broad workflow token permissions (3.972917ms)
+✔ release requires tag-scoped keyless signing SPDX SBOM and provenance (0.974458ms)
+✔ runtime image uses a pinned minimal non-root Node 24 base and an exec healthcheck (0.601959ms)
+✔ offline audit and checkpoint commands verify real files and fail on tampering (1565.670833ms)
+✔ upstream pin command prints the actual full descriptor hash (616.205625ms)
+✔ SIGHUP rejects invalid files keeps old authentication and applies a valid reload (1394.434375ms)
+✔ deny by default, role and agent boundaries, tool catalog filtering (15.904459ms)
+✔ explicit deny dominates allow and approval, exact matches avoid wildcard grants (0.225583ms)
+✔ unexpected and malformed tool arguments never reach execution (2.214083ms)
+✔ approval lifecycle requires independent review and consumes exactly once (3.034167ms)
+✔ approval binding rejects changed arguments (1.074041ms)
+✔ approval binding rejects changed actor (0.866917ms)
+✔ approval binding rejects changed agent (0.826375ms)
+✔ approval binding rejects changed policy (2.501791ms)
+✔ expiry, rejection, and repeat review are enforced (2.109667ms)
+✔ concurrent approval reuse results in one execution (3.05825ms)
+✔ approval consumption survives process restart (7.816833ms)
+✔ executor failure consumes approval and records failure without its exception message (1.537208ms)
+✔ pending approval queue is bounded and denial burst detection expires (7.750458ms)
+✔ aws export adapter validates its documented fields (1.075708ms)
+✔ azure export adapter validates its documented fields (0.584541ms)
+✔ gcp export adapter validates its documented fields (0.538667ms)
+✔ valid asymmetric access token maps to the server registry (12.449875ms)
+✔ token contract: issuer (1.667875ms)
+✔ token contract: audience (0.523ms)
+✔ token contract: expired (0.422291ms)
+✔ token contract: future (0.526708ms)
+✔ token contract: lifetime (0.59975ms)
+✔ token contract: subject (0.525292ms)
+✔ token contract: type (0.454458ms)
+✔ token contract: jti (0.49875ms)
+✔ token contract: forged-role (0.508708ms)
+✔ invalid headers, unsigned payloads, and foreign signing keys fail closed (1.255125ms)
+✔ private keys and ambiguous identities are rejected at configuration (1.477209ms)
+✔ canonical request digest ignores object key order and preserves array order (0.224125ms)
+✔ rate limits include bounded key capacity and window expiry (0.14675ms)
+✔ audit detects edited content, removed middle records, and wrong keys on reopen (8.211792ms)
+✔ database transaction rolls back intent and state together (0.670458ms)
+✔ RS256 public verification and audit content-edit detection (86.206166ms)
+✔ fixed upstream enforces descriptor pin, credential separation, and no execution after metadata drift (142.639375ms)
+✔ untrusted URL shapes are rejected even for demo upstreams (0.339417ms)
+ℹ tests 79
 ℹ suites 0
-ℹ pass 39
+ℹ pass 79
 ℹ fail 0
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 3001.868167
+ℹ duration_ms 12690.524875
 ℹ start of coverage report
-ℹ -------------------------------------------------------------
-ℹ file         | line % | branch % | funcs % | uncovered lines
-ℹ -------------------------------------------------------------
-ℹ src          |        |          |         |
-ℹ  app.ts      |  94.12 |   100.00 |   60.00 | 17-18 21-22
-ℹ  gateway.ts  |  98.18 |    94.29 |   93.10 | 60 145 148-149
-ℹ  http.ts     |  90.91 |    88.89 |   80.00 | 36-37 60-65 67
-ℹ  mcp.ts      | 100.00 |    88.24 |  100.00 |
-ℹ  policy.ts   | 100.00 |   100.00 |  100.00 |
-ℹ  security.ts | 100.00 |    96.49 |  100.00 |
-ℹ  store.ts    |  97.30 |    92.59 |  100.00 | 17-19
-ℹ  tools.ts    | 100.00 |    94.74 |  100.00 |
-ℹ  upstream.ts |  97.50 |    70.59 |  100.00 | 76-77 79
-ℹ -------------------------------------------------------------
-ℹ all files    |  97.68 |    91.27 |   93.04 |
-ℹ -------------------------------------------------------------
+ℹ -------------------------------------------------------------------
+ℹ file             | line % | branch % | funcs % | uncovered lines
+ℹ -------------------------------------------------------------------
+ℹ scripts          |        |          |         |
+ℹ  audit-verify.ts | 100.00 |    33.33 |  100.00 |
+ℹ  checkpoint.ts   | 100.00 |    33.33 |  100.00 |
+ℹ  pin-upstream.ts | 100.00 |    50.00 |  100.00 |
+ℹ src              |        |          |         |
+ℹ  app.ts          | 100.00 |    96.00 |  100.00 |
+ℹ  checkpoint.ts   |  96.92 |    63.64 |  100.00 | 31-32
+ℹ  config.ts       |  90.32 |    30.00 |  100.00 | 10 12-13 16 22 36
+ℹ  detection.ts    |  98.95 |    70.37 |   90.00 | 54
+ℹ  gateway.ts      |  99.33 |    97.53 |  100.00 | 104-105
+ℹ  http.ts         |  94.96 |    94.29 |   84.62 | 77 81-85
+ℹ  main.ts         |  88.24 |    50.00 |  100.00 | 11-13 20-21 26
+ℹ  mcp.ts          | 100.00 |    88.24 |  100.00 |
+ℹ  output.ts       |  98.36 |    89.66 |  100.00 | 47
+ℹ  policy.ts       | 100.00 |   100.00 |  100.00 |
+ℹ  security.ts     | 100.00 |    96.63 |  100.00 |
+ℹ  store.ts        |  97.46 |    91.07 |   94.74 | 22 60 92-94
+ℹ  tools.ts        | 100.00 |    94.74 |  100.00 |
+ℹ  upstream.ts     |  98.68 |    75.61 |  100.00 | 58 72
+ℹ -------------------------------------------------------------------
+ℹ all files        |  98.19 |    86.12 |   97.58 |
+ℹ -------------------------------------------------------------------
 ℹ end of coverage report

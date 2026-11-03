@@ -43,7 +43,7 @@ export function upstreamExecutor(input: unknown, token: string | undefined, allo
     execute: async (name: string, args: unknown, context?: ExecutionContext): Promise<unknown> => {
       const mapping = config.tools.find((t) => t.local === name);
       if (!mapping) return execute(name, args);
-      const client = new Client({ name: 'mcp-sentinel-upstream', version: '1.0.0' });
+      const client = new Client({ name: 'mcp-sentinel-upstream', version: '1.1.0' });
 
       try {
         await client.connect(
