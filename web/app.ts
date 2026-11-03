@@ -83,7 +83,14 @@ async function refresh() {
       box.append(
         top,
         node('p', `${a.subject} · ${new Date(a.expires).toLocaleTimeString()} expiry`),
-        node('p', JSON.stringify(a.request.args ?? {}), 'mono'),
+        node(
+          'p',
+          (typeof a.request.args === 'string'
+            ? a.request.args
+            : JSON.stringify(a.request.args ?? {})) +
+            (a.request.argsTruncated ? ' [truncated at 4 KB]' : ''),
+          'mono',
+        ),
         node('p', a.id, 'mono'),
       );
       if (a.status === 'pending' && a.expires > Date.now()) {

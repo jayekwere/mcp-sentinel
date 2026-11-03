@@ -2,7 +2,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { mkdirSync, chmodSync } from 'node:fs';
 import { dirname } from 'node:path';
-import { canonical } from './security.js';
+import { canonical, argumentPreview } from './security.js';
 
 export interface Audit {
   seq: number;
@@ -33,6 +33,13 @@ export class Store {
       CREATE TABLE IF NOT EXISTS approvals(id TEXT PRIMARY KEY, tenant TEXT NOT NULL, subject TEXT NOT NULL, binding TEXT NOT NULL, expires INTEGER NOT NULL, status TEXT NOT NULL, reviewer TEXT);
       CREATE TABLE IF NOT EXISTS runs(id TEXT PRIMARY KEY, tenant TEXT NOT NULL, body TEXT NOT NULL);
     `);
+    const columns = this.db.prepare('PRAGMA table_info(approvals)').all() as { name: string }[];
+    if (!columns.some((c) => c.name === 'request'))
+      this.transaction(() => {
+        this.db.exec(
+          "ALTER TABLE approvals ADD COLUMN request TEXT NOT NULL DEFAULT '{}'; UPDATE approvals SET status='invalidated' WHERE status IN ('pending','approved');",
+        );
+      });
     if (!this.verify()) {
       this.db.close();
       throw new Error('Audit integrity check failed');
@@ -118,7 +125,11 @@ export class Store {
           "SELECT body,hash FROM audit WHERE json_extract(body,'$.tenant')=? ORDER BY seq DESC LIMIT ?",
         )
         .all(tenant, limit) as { body: string; hash: string }[]
-    ).map((r) => ({ ...JSON.parse(r.body), hash: r.hash }));
+    ).map((r) => ({
+      ...JSON.parse(r.body),
+      hash: r.hash,
+      detail: argumentPreview(JSON.parse(r.body).detail),
+    }));
   }
   close() {
     this.db.close();

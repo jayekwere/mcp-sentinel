@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import { Store } from './store.js';
-import { digest, Fault, type Identity } from './security.js';
+import { digest, canonical, argumentPreview, Fault, type Identity } from './security.js';
 import { PolicyEngine } from './policy.js';
 import { execute, schemaHash, tools, validate } from './tools.js';
 export const CallSchema = z
@@ -20,6 +20,7 @@ interface Approval {
   expires: number;
   status: string;
   reviewer: string | null;
+  request: string;
 }
 export class Gateway {
   constructor(
@@ -35,7 +36,7 @@ export class Gateway {
       tenant: who.tenant,
       agent: who.agent,
       tool: call.tool,
-      args: call.tool === 'evidence.export' ? call.arguments : { digest: digest(call.arguments) },
+      args: call.arguments,
       policy: this.policy.hash,
       schema: schemaHash(call.tool),
       execution: this.executionVersion,
@@ -82,12 +83,22 @@ export class Gateway {
         .get(who.subject, this.now()) as { n: number };
       if (count.n >= 20) throw new Fault(429, 'approval_queue_full');
       this.store.db
-        .prepare('INSERT INTO approvals VALUES(?,?,?,?,?,?,NULL)')
-        .run(id, who.tenant, who.subject, this.binding(who, call), expires, 'pending');
+        .prepare(
+          'INSERT INTO approvals(id,tenant,subject,binding,expires,status,reviewer,request) VALUES(?,?,?,?,?,?,NULL,?)',
+        )
+        .run(
+          id,
+          who.tenant,
+          who.subject,
+          this.binding(who, call),
+          expires,
+          'pending',
+          canonical({ tool: call.tool, args: call.arguments }),
+        );
       this.store.audit(who.tenant, who.subject, 'approval.requested', 'pending', {
         id,
         tool: call.tool,
-        args: call.tool === 'evidence.export' ? call.arguments : { digest: digest(call.arguments) },
+        args: call.arguments,
         policy: this.policy.hash,
       });
     });
@@ -121,14 +132,12 @@ export class Gateway {
     const rows = this.store.db
       .prepare('SELECT * FROM approvals WHERE tenant=? ORDER BY expires DESC LIMIT 100')
       .all(who.tenant) as unknown as Approval[];
-    const requested = this.store
-      .audits(who.tenant, 1000)
-      .filter((a) => a.action === 'approval.requested');
     return rows.map((r) => ({
       ...r,
-      request: requested.find((a) => a.detail.id === r.id)?.detail ?? {},
+      request: argumentPreview(JSON.parse(r.request) as Record<string, unknown>),
     }));
   }
+
   async call(who: Identity, input: unknown) {
     const call = CallSchema.parse(input),
       decision = this.check(who, call),

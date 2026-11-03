@@ -135,3 +135,15 @@ export class Limiter {
     if (++bucket.n > this.limit) throw new Fault(429, 'rate_limited');
   }
 }
+
+export function argumentPreview(detail: Record<string, unknown>): Record<string, unknown> {
+  if (!('args' in detail)) return detail;
+  const serialized = canonical(detail.args);
+  if (Buffer.byteLength(serialized) <= 4096) return { ...detail, argsTruncated: false };
+  let preview = '';
+  for (const char of serialized) {
+    if (Buffer.byteLength(preview + char) > 4096) break;
+    preview += char;
+  }
+  return { ...detail, args: preview, argsTruncated: true };
+}
