@@ -67,3 +67,32 @@ Operators can revoke a subject or a token ID in their own tenant through `POST /
 Generate a separate Ed25519 PKCS8 PEM key with `openssl genpkey -algorithm ED25519 -out checkpoint-key.pem` and export the verification key with `openssl pkey -in checkpoint-key.pem -pubout -out checkpoint-public.pem`. Restrict the signing key to the checkpoint operator. Stop the single-writer service, then run `DB_PATH=... AUDIT_KEY=... CHECKPOINT_KEY=checkpoint-key.pem CHECKPOINT_FILE=/independent/checkpoint.json npm run checkpoint`. The command fully verifies the ledger before atomically writing signed `{seq,hash,at,signature}` JSON.
 
 Set `CHECKPOINT_FILE` and `CHECKPOINT_PUBLIC_KEY` on the runtime. Startup requires a valid Ed25519 signature and matching sequence/hash. The runtime needs only the public key. For an offline operator workflow, `CHECKPOINT_KEY` can also supply the verification key through its public component. Keep the checkpoint and public-key configuration in independent protected storage; rolling back or replacing both defeats this control. A missing configured file fails startup. Checkpoint creation is offline because the database deliberately permits one opener. The initial checkpoint must exist before enabling startup enforcement.
+
+## Detection export
+
+Set `DETECTION_SINK=stdout` for one JSON line per new finding, or use an HTTPS webhook URL. The service records a persistent unique `(tenant,rule,evidence seq)` before attempting export. Repeated dashboard reads and restarts don't resend the finding. This is at-most-once delivery: crashes and sink failures can lose an export. Keep the ledger as the evidence source. Webhooks use POST JSON, a three-second deadline, no redirects and no retries. Requests don't await network delivery. At most 100 deliveries can be in flight; overflow and failures create `detection.sink.failed` events without including the sink URL, response body, or credentials.
+
+Events use the [OCSF 1.4 Detection Finding](https://schema.ocsf.io/1.4.0/classes/detection_finding) class (`class_uid=2004`, create activity). Tenant, subject, count and audit sequence are carried in `unmapped`. For example:
+
+```json
+{
+  "activity_id": 1,
+  "category_uid": 2,
+  "class_uid": 2004,
+  "type_uid": 200401,
+  "time": 1793721600000,
+  "severity_id": 4,
+  "metadata": {
+    "version": "1.4.0",
+    "product": { "name": "MCP Sentinel", "vendor_name": "MCP Sentinel", "version": "1.1.0" }
+  },
+  "finding_info": {
+    "uid": "agent-denial-burst:12",
+    "title": "agent-denial-burst",
+    "created_time": 1793721600000
+  },
+  "unmapped": { "tenant": "sandbox", "actor": "demo-agent", "evidence_seq": 12, "count": 5 }
+}
+```
+
+Findings are derived when audit writes commit, so exports don't depend on the dashboard being open. Dashboard findings expire from its sixty-second view; the deduplication record persists. Detection state has no automatic retention. Monitor database growth.

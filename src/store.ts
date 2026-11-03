@@ -20,6 +20,14 @@ export class Store {
   readonly db: DatabaseSync;
   private verified = { seq: 0, hash: 'genesis' };
   private integrityFailed = false;
+  private pendingAudits: Audit[] = [];
+  private observers = new Set<(event: Audit) => void>();
+  onAudit(fn: (event: Audit) => void) {
+    this.observers.add(fn);
+    return () => {
+      this.observers.delete(fn);
+    };
+  }
   constructor(
     path: string,
     private key: string,
@@ -42,6 +50,7 @@ export class Store {
       CREATE TABLE IF NOT EXISTS audit(seq INTEGER PRIMARY KEY, body TEXT NOT NULL, hash TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS approvals(id TEXT PRIMARY KEY, tenant TEXT NOT NULL, subject TEXT NOT NULL, binding TEXT NOT NULL, expires INTEGER NOT NULL, status TEXT NOT NULL, reviewer TEXT);
       CREATE TABLE IF NOT EXISTS revocations(tenant TEXT NOT NULL, kind TEXT NOT NULL, value TEXT NOT NULL, subject TEXT NOT NULL, expires INTEGER NOT NULL, PRIMARY KEY(tenant,kind,value,subject));
+      CREATE TABLE IF NOT EXISTS detections(tenant TEXT NOT NULL, rule TEXT NOT NULL, evidence INTEGER NOT NULL, at INTEGER NOT NULL, body TEXT NOT NULL, PRIMARY KEY(tenant,rule,evidence));
       CREATE TABLE IF NOT EXISTS runs(id TEXT PRIMARY KEY, tenant TEXT NOT NULL, body TEXT NOT NULL);
     `);
       const columns = this.db.prepare('PRAGMA table_info(approvals)').all() as { name: string }[];
@@ -66,15 +75,21 @@ export class Store {
   transaction<T>(fn: () => T): T {
     if (this.db.isTransaction) return fn();
     this.db.exec('BEGIN IMMEDIATE');
+    let value: T;
     try {
-      const value = fn();
+      value = fn();
       this.db.exec('COMMIT');
-      return value;
     } catch (e) {
       this.db.exec('ROLLBACK');
+      this.pendingAudits = [];
       throw e;
     }
+    const events = this.pendingAudits;
+    this.pendingAudits = [];
+    for (const event of events) for (const observe of this.observers) observe(event);
+    return value;
   }
+
   audit(
     tenant: string,
     actor: string,
@@ -100,7 +115,9 @@ export class Store {
       this.db
         .prepare('INSERT INTO audit(seq,body,hash) VALUES(?,?,?)')
         .run(body.seq, canonical(body), hash);
-      return { ...body, hash };
+      const event = { ...body, hash };
+      this.pendingAudits.push(event);
+      return event;
     });
   }
   verify(full = false): boolean {
@@ -161,6 +178,7 @@ export class Store {
       .get(tenant, subject, this.now(), jti);
   }
   close() {
+    this.observers.clear();
     this.db.close();
   }
 }

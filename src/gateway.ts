@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
-import { Store } from './store.js';
+import { DetectionExport, type Detection, type DetectionOptions } from './detection.js';
+import { Store, type Audit } from './store.js';
 import { digest, canonical, argumentPreview, Fault, type Identity } from './security.js';
 import { PolicyEngine } from './policy.js';
 import { execute, schemaHash, tools, validate } from './tools.js';
@@ -23,13 +24,57 @@ interface Approval {
   request: string;
 }
 export class Gateway {
+  private exporter: DetectionExport;
   constructor(
     readonly store: Store,
     readonly policy = new PolicyEngine(),
     private now = () => Date.now(),
     private executor = execute,
     private executionVersion = 'builtin-v1',
-  ) {}
+    options: DetectionOptions = { sink: process.env.DETECTION_SINK },
+  ) {
+    this.exporter = new DetectionExport(store, options);
+    store.onAudit((event) => this.detect(event));
+  }
+  flushDetections() {
+    return this.exporter.flush();
+  }
+  private detect(event: Audit) {
+    let detection: Detection | undefined;
+    if (event.action === 'tool.denied') {
+      const n = this.store
+        .audits(event.tenant, 1000)
+        .filter(
+          (e) =>
+            e.action === 'tool.denied' &&
+            e.actor === event.actor &&
+            Date.parse(e.at) > this.now() - 60000,
+        ).length;
+      if (n === 5)
+        detection = {
+          rule: 'agent-denial-burst',
+          severity: 'high',
+          actor: event.actor,
+          evidence: event.seq,
+          count: n,
+          windowSeconds: 60,
+        };
+    } else {
+      const rules: Record<string, [string, string]> = {
+        'approval.invalid': ['invalid-approval-use', 'high'],
+        'tool.failed': ['tool-execution-failure', 'medium'],
+        'upstream.output.redacted': ['upstream-secret-redacted', 'high'],
+      };
+      const rule = rules[event.action];
+      if (rule)
+        detection = { rule: rule[0], severity: rule[1], actor: event.actor, evidence: event.seq };
+    }
+    if (!detection) return;
+    const inserted = this.store.db
+      .prepare('INSERT OR IGNORE INTO detections VALUES(?,?,?,?,?)')
+      .run(event.tenant, detection.rule, event.seq, Date.parse(event.at), canonical(detection));
+    if (inserted.changes) this.exporter.emit(detection, event);
+  }
   private binding(who: Identity, call: Call) {
     return digest({
       subject: who.subject,
@@ -211,46 +256,13 @@ export class Gateway {
       throw new Fault(502, reason);
     }
   }
-  detections(who: Identity) {
-    const events = this.store.audits(who.tenant, 1000),
-      recent = events.filter((e) => Date.parse(e.at) > this.now() - 60000);
-    const counts = new Map<string, number>();
-    for (const e of recent.filter((e) => e.action === 'tool.denied'))
-      counts.set(e.actor, (counts.get(e.actor) ?? 0) + 1);
-    return [
-      ...[...counts]
-        .filter(([, n]) => n >= 5)
-        .map(([actor, n]) => ({
-          rule: 'agent-denial-burst',
-          severity: 'high',
-          actor,
-          count: n,
-          windowSeconds: 60,
-        })),
-      ...recent
-        .filter((e) => e.action === 'approval.invalid')
-        .map((e) => ({
-          rule: 'invalid-approval-use',
-          severity: 'high',
-          actor: e.actor,
-          evidence: e.seq,
-        })),
-      ...recent
-        .filter((e) => e.action === 'upstream.output.redacted')
-        .map((e) => ({
-          rule: 'upstream-secret-redacted',
-          severity: 'high',
-          actor: e.actor,
-          evidence: e.seq,
-        })),
-      ...recent
-        .filter((e) => e.action === 'tool.failed')
-        .map((e) => ({
-          rule: 'tool-execution-failure',
-          severity: 'medium',
-          actor: e.actor,
-          evidence: e.seq,
-        })),
-    ];
+  detections(who: Identity): Detection[] {
+    return (
+      this.store.db
+        .prepare(
+          'SELECT body FROM detections WHERE tenant=? AND at>? ORDER BY evidence DESC LIMIT 1000',
+        )
+        .all(who.tenant, this.now() - 60000) as { body: string }[]
+    ).map((r) => JSON.parse(r.body) as Detection);
   }
 }

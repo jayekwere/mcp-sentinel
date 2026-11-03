@@ -67,6 +67,9 @@ export function createApp(options: {
     });
     return reply.status(201).send({ status: 'revoked' });
   });
+  app.addHook('onClose', async () => {
+    await gateway.flushDetections();
+  });
   app.get('/api/tools', async (req) => ({ tools: gateway.catalog(req.identity) }));
   app.post('/api/call', async (req) => gateway.call(req.identity, req.body));
   app.post('/api/approvals', async (req, reply) =>

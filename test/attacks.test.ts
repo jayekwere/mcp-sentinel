@@ -611,3 +611,61 @@ for (const attack of ['tail rollback', 'forged signature'])
       rmSync(dir, { recursive: true, force: true });
     }
   });
+
+test('exports each detection once by rule and audit evidence across repeated reads', async () => {
+  const { Gateway } = await import('../src/gateway.js');
+  const demo = await demoAuth('mcp-sentinel');
+  const store = new Store(':memory:', key);
+  const lines: string[] = [];
+  const g = new Gateway(store, undefined, undefined, undefined, undefined, {
+    sink: 'stdout',
+    write: (line) => lines.push(line),
+  });
+  try {
+    for (let i = 0; i < 5; i++)
+      await assert.rejects(
+        g.call(demo.auth.config.identities[0]!, { tool: 'unknown', arguments: {} }),
+      );
+    for (let i = 0; i < 3; i++) g.detections(demo.auth.config.identities[0]!);
+    await g.flushDetections();
+    assert.equal(lines.length, 1);
+    const event = JSON.parse(lines[0]!);
+    assert.equal(event.class_uid, 2004);
+    assert.equal(event.finding_info.title, 'agent-denial-burst');
+    assert.equal(typeof event.unmapped.evidence_seq, 'number');
+  } finally {
+    store.close();
+  }
+});
+test('webhook failure is audited without breaking tool calls', async () => {
+  const { Gateway } = await import('../src/gateway.js');
+  const demo = await demoAuth('mcp-sentinel');
+  const store = new Store(':memory:', key);
+  let options: RequestInit | undefined;
+  const g = new Gateway(store, undefined, undefined, undefined, undefined, {
+    sink: 'https://sink.invalid/detections',
+    fetch: async (_url, init) => {
+      options = init;
+      throw new Error('sensitive webhook failure');
+    },
+  });
+  try {
+    for (let i = 0; i < 5; i++)
+      await assert.rejects(
+        g.call(demo.auth.config.identities[0]!, { tool: 'unknown', arguments: {} }),
+      );
+    const result = await g.call(demo.auth.config.identities[0]!, {
+      tool: 'knowledge.search',
+      arguments: { query: 'safe' },
+    });
+    assert.equal(result.decision, 'allowed');
+    await g.flushDetections();
+    assert.equal(options?.redirect, 'error');
+    assert.ok(options?.signal);
+    const events = store.audits('sandbox');
+    assert.equal(events.filter((e) => e.action === 'detection.sink.failed').length, 1);
+    assert.ok(!JSON.stringify(events).includes('sensitive webhook failure'));
+  } finally {
+    store.close();
+  }
+});
