@@ -39,6 +39,18 @@ try {
     await new Promise((r) => setTimeout(r, 250));
   }
   assert.ok(ready, 'Container became healthy');
+  const runtime = JSON.parse(
+    docker([
+      'exec',
+      name,
+      '/nodejs/bin/node',
+      '-e',
+      "const fs=require('node:fs'); console.log(JSON.stringify({uid:process.getuid(),node:process.versions.node,packageManagers:['/usr/local/bin/npm','/usr/local/bin/npx','/usr/local/bin/corepack','/nodejs/bin/npm','/usr/bin/npm'].filter(p=>fs.existsSync(p))}))",
+    ]),
+  );
+  assert.notEqual(runtime.uid, 0);
+  assert.match(runtime.node, /^24\./);
+  assert.deepEqual(runtime.packageManagers, []);
   const logs = docker(['logs', name]);
   const tokens = JSON.parse(logs.split('Ephemeral demo tokens (15 minutes):\n')[1]);
   const headers = (role) => ({
@@ -59,7 +71,7 @@ try {
   assert.equal((await post('/api/call', { ...call, approvalId: approval.id })).status, 200);
   assert.equal((await post('/api/call', { ...call, approvalId: approval.id })).status, 403);
   console.log(
-    'PASS: non-root read-only container, health, authentication, approval, execution, and replay rejection',
+    'PASS: non-root read-only Node 24 distroless container without package managers, health, authentication, approval, execution, and replay rejection',
   );
 } finally {
   try {

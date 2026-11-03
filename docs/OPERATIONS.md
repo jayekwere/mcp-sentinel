@@ -10,7 +10,7 @@ Run `npm ci --ignore-scripts`, `npm run build`, and `DEMO=1 npm start`. Open `ht
 
 ## Production configuration contract
 
-Demo mode is off unless `DEMO=1` is explicitly set. Startup requires a public HTTPS `BASE_URL`, an `AUTH_CONFIG` JSON file, and a stable `AUDIT_KEY` of at least 32 bytes. Generate the audit key from a cryptographic random source and supply it through a secret manager. Never commit it. Set `DB_PATH` to a writable local SQLite path and mount the parent directory for the non-root container user, UID 1000. Keep configuration files read-only.
+Demo mode is off unless `DEMO=1` is explicitly set. Startup requires a public HTTPS `BASE_URL`, an `AUTH_CONFIG` JSON file, and a stable `AUDIT_KEY` of at least 32 bytes. Generate the audit key from a cryptographic random source and supply it through a secret manager. Never commit it. Set `DB_PATH` to a writable local SQLite path and mount the parent directory for the non-root container user, UID 65532. Keep configuration files read-only.
 
 | Setting       | Purpose                                                                                  |
 | ------------- | ---------------------------------------------------------------------------------------- |
@@ -100,3 +100,5 @@ Findings are derived when audit writes commit, so exports don't depend on the da
 ## Automatic containment
 
 `SUSPEND_ON_DENIAL_BURST_SECONDS` defaults to `0` (off); demo startup defaults to `300`. Values must be integer seconds from 0 through 86400. A new `agent-denial-burst` finding suspends that subject in its tenant, records `subject.suspended`, and blocks every API and MCP request with `403 subject_suspended`. Expiry uses server time and state survives restart. Static pages and health remain public. An independent active operator can lift a suspension with strict JSON `{"subject":"demo-agent"}` at `POST /api/suspensions/lift`; cross-tenant records aren't accessible. Lifts record `subject.reinstated`. The overview and dashboard show active tenant suspensions. Another qualifying burst can suspend a subject again. Burst counting still examines at most 1,000 recent tenant audit rows and isn't a distributed abuse detector.
+
+The runtime uses digest-pinned `gcr.io/distroless/nodejs24-debian13:nonroot` with UID/GID 65532 and an executable Node healthcheck. It contains no shell or npm tooling. The Alpine build stage runs type checks, tests, and bundling; only production dependencies and compiled application assets enter the runtime.

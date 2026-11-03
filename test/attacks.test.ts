@@ -830,3 +830,15 @@ test('release requires tag-scoped keyless signing SPDX SBOM and provenance', asy
   assert.match(workflow, /^      id-token: write$/m);
   assert.ok(!/^  id-token: write$/m.test(workflow));
 });
+
+test('runtime image uses a pinned minimal non-root Node 24 base and an exec healthcheck', async () => {
+  const { readFileSync } = await import('node:fs');
+  const dockerfile = readFileSync('Dockerfile', 'utf8').split(' AS runtime')[1]!;
+  assert.match(
+    readFileSync('Dockerfile', 'utf8'),
+    /FROM gcr\.io\/distroless\/nodejs24-debian13:nonroot@sha256:[0-9a-f]{64} AS runtime/,
+  );
+  assert.match(dockerfile, /USER 65532:65532/);
+  assert.match(dockerfile, /HEALTHCHECK.*CMD \["\/nodejs\/bin\/node"/);
+  assert.ok(!/^RUN /m.test(dockerfile));
+});
