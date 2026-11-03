@@ -335,3 +335,145 @@ for (const field of ['annotations', 'outputSchema', 'title', 'unknown'])
       await f.app.close();
     }
   });
+
+for (const type of ['image', 'audio', 'resource', 'resource_link'])
+  test('rejects upstream ' + type + ' content', async () => {
+    const { upstreamFixture } = await import('./upstream-fixture.js');
+    const { upstreamExecutor } = await import('../src/upstream.js');
+    const { digest } = await import('../src/security.js');
+    const f = await upstreamFixture();
+    try {
+      f.state.result = {
+        content: [
+          type === 'resource'
+            ? { type, resource: { uri: 'file:///secret', text: 'sensitive' } }
+            : type === 'resource_link'
+              ? { type, uri: 'https://invalid.example', name: 'link' }
+              : { type, data: 'AAAA', mimeType: type + '/test' },
+        ],
+      };
+      const a = upstreamExecutor(
+        {
+          url: f.url,
+          tools: [
+            {
+              local: 'knowledge.search',
+              remote: 'search',
+              descriptorHash: digest(f.state.descriptor),
+            },
+          ],
+        },
+        undefined,
+        true,
+      );
+      const { Gateway } = await import('../src/gateway.js');
+      const store = new Store(':memory:', key);
+      const demo = await demoAuth('mcp-sentinel');
+      try {
+        const g = new Gateway(store, undefined, undefined, a.execute, a.version);
+        await assert.rejects(
+          g.call(demo.auth.config.identities[0]!, {
+            tool: 'knowledge.search',
+            arguments: { query: 'safe' },
+          }),
+          { code: 'upstream_content_rejected' },
+        );
+      } finally {
+        store.close();
+      }
+    } finally {
+      await f.app.close();
+    }
+  });
+test('rejects upstream outputSchema mismatch and missing structured content', async () => {
+  const { upstreamFixture } = await import('./upstream-fixture.js');
+  const { upstreamExecutor } = await import('../src/upstream.js');
+  const { digest } = await import('../src/security.js');
+  const f = await upstreamFixture();
+  try {
+    f.state.descriptor.outputSchema = {
+      type: 'object',
+      properties: { ok: { type: 'boolean' } },
+      required: ['ok'],
+      additionalProperties: false,
+    };
+    const a = upstreamExecutor(
+      {
+        url: f.url,
+        tools: [
+          {
+            local: 'knowledge.search',
+            remote: 'search',
+            descriptorHash: digest(f.state.descriptor),
+          },
+        ],
+      },
+      undefined,
+      true,
+    );
+    for (const result of [
+      { content: [{ type: 'text', text: 'safe' }] },
+      { content: [{ type: 'text', text: 'safe' }], structuredContent: { ok: 'wrong' } },
+    ]) {
+      f.state.result = result;
+      await assert.rejects(a.execute('knowledge.search', { query: 'safe' }), {
+        code: 'upstream_output_schema_invalid',
+      });
+    }
+  } finally {
+    await f.app.close();
+  }
+});
+for (const [type, secret] of [
+  ['aws-access-key', 'AKIA' + 'Z'.repeat(16)],
+  ['pem-private-key', '-----BEGIN PRIVATE KEY-----\nsynthetic\n-----END PRIVATE KEY-----'],
+  ['jwt', ['eyJhbGciOiJub25lIn0', 'eyJzdWIiOiJzeW50aGV0aWMifQ', 'c3ludGhldGlj'].join('.')],
+  ['github-token', 'ghp_' + 'Z'.repeat(36)],
+] as const)
+  test('redacts and audits upstream ' + type + ' secrets', async () => {
+    const { upstreamFixture } = await import('./upstream-fixture.js');
+    const { upstreamExecutor } = await import('../src/upstream.js');
+    const { digest } = await import('../src/security.js');
+    const { Gateway } = await import('../src/gateway.js');
+    const f = await upstreamFixture();
+    const store = new Store(':memory:', key);
+    const demo = await demoAuth('mcp-sentinel');
+    try {
+      f.state.result = {
+        content: [{ type: 'text', text: 'before ' + secret + ' after' }],
+        structuredContent: { text: secret },
+      };
+      const a = upstreamExecutor(
+        {
+          url: f.url,
+          tools: [
+            {
+              local: 'knowledge.search',
+              remote: 'search',
+              descriptorHash: digest(f.state.descriptor),
+            },
+          ],
+        },
+        undefined,
+        true,
+      );
+      const g = new Gateway(store, undefined, undefined, a.execute, a.version);
+      const result = await g.call(demo.auth.config.identities[0]!, {
+        tool: 'knowledge.search',
+        arguments: { query: 'safe' },
+      });
+      assert.ok(!JSON.stringify(result).includes(secret));
+      assert.ok(JSON.stringify(result).includes('[REDACTED:' + type + ']'));
+      const audit = store.audits('sandbox').find((e) => e.action === 'upstream.output.redacted');
+      assert.equal((audit?.detail.counts as Record<string, number>)[type!], 2);
+      assert.ok(!JSON.stringify(store.audits('sandbox')).includes(secret));
+      assert.ok(
+        g
+          .detections(demo.auth.config.identities[0]!)
+          .some((d) => d.rule === 'upstream-secret-redacted'),
+      );
+    } finally {
+      await f.app.close();
+      store.close();
+    }
+  });

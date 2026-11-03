@@ -178,18 +178,37 @@ export class Gateway {
       policy: this.policy.hash,
     });
     try {
-      const result = await this.executor(call.tool, call.arguments);
+      const result = await this.executor(call.tool, call.arguments, {
+        onRedaction: (counts) => {
+          this.store.audit(who.tenant, who.subject, 'upstream.output.redacted', 'redacted', {
+            tool: call.tool,
+            requestId,
+            counts,
+          });
+        },
+      });
       this.store.audit(who.tenant, who.subject, 'tool.completed', 'allowed', {
         tool: call.tool,
         requestId,
       });
       return { requestId, decision: 'allowed', rule: decision.rule, result };
-    } catch {
+    } catch (error) {
+      const safeCodes = [
+        'upstream_content_rejected',
+        'upstream_output_schema_invalid',
+        'upstream_descriptor_changed',
+        'upstream_result_too_large',
+        'upstream_tool_error',
+        'upstream_catalog_requires_pagination',
+      ];
+      const reason =
+        error instanceof Fault && safeCodes.includes(error.code) ? error.code : 'tool_failed';
       this.store.audit(who.tenant, who.subject, 'tool.failed', 'error', {
         tool: call.tool,
         requestId,
+        reason,
       });
-      throw new Fault(502, 'tool_failed');
+      throw new Fault(502, reason);
     }
   }
   detections(who: Identity) {
@@ -212,6 +231,14 @@ export class Gateway {
         .filter((e) => e.action === 'approval.invalid')
         .map((e) => ({
           rule: 'invalid-approval-use',
+          severity: 'high',
+          actor: e.actor,
+          evidence: e.seq,
+        })),
+      ...recent
+        .filter((e) => e.action === 'upstream.output.redacted')
+        .map((e) => ({
+          rule: 'upstream-secret-redacted',
           severity: 'high',
           actor: e.actor,
           evidence: e.seq,

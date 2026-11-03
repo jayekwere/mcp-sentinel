@@ -2,7 +2,8 @@ import { z } from 'zod';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import { digest, Fault } from './security.js';
-import { execute } from './tools.js';
+import { execute, type ExecutionContext } from './tools.js';
+import { controlOutput } from './output.js';
 const Config = z
   .object({
     url: z.url(),
@@ -39,7 +40,7 @@ export function upstreamExecutor(input: unknown, token: string | undefined, allo
     throw new Error('Duplicate tool mapping');
   return {
     version: digest(config),
-    execute: async (name: string, args: unknown): Promise<unknown> => {
+    execute: async (name: string, args: unknown, context?: ExecutionContext): Promise<unknown> => {
       const mapping = config.tools.find((t) => t.local === name);
       if (!mapping) return execute(name, args);
       const client = new Client({ name: 'mcp-sentinel-upstream', version: '1.0.0' });
@@ -59,15 +60,18 @@ export function upstreamExecutor(input: unknown, token: string | undefined, allo
         const remote = catalog.tools.find((t) => t.name === mapping.remote);
         if (!remote || descriptorHash(remote) !== mapping.descriptorHash)
           throw new Fault(502, 'upstream_descriptor_changed');
-        const result = await client.callTool(
-          { name: mapping.remote, arguments: args as Record<string, unknown> },
-          undefined,
+        const result = await client.request(
+          {
+            method: 'tools/call',
+            params: { name: mapping.remote, arguments: args as Record<string, unknown> },
+          },
+          z.record(z.string(), z.unknown()),
           { timeout: 5000 },
         );
         if (Buffer.byteLength(JSON.stringify(result)) > 65536)
           throw new Fault(502, 'upstream_result_too_large');
         if (result.isError) throw new Fault(502, 'upstream_tool_error');
-        return { source: 'pinned-upstream', content: result.content };
+        return controlOutput(remote, result, context?.onRedaction);
       } finally {
         await client.close();
       }
