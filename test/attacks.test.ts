@@ -498,3 +498,48 @@ test('prevents group and world access to SQLite database WAL and SHM files', asy
     rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test('rejects a second database writer in this process and another process', async () => {
+  const { mkdtempSync, rmSync } = await import('node:fs');
+  const { tmpdir } = await import('node:os');
+  const { join } = await import('node:path');
+  const { spawnSync } = await import('node:child_process');
+  const dir = mkdtempSync(join(tmpdir(), 'sentinel-writer-'));
+  const path = join(dir, 'state.sqlite');
+  const store = new Store(path, key);
+  try {
+    assert.throws(() => new Store(path, key), /single-writer/);
+    const child = spawnSync(
+      process.execPath,
+      [
+        '--import',
+        'tsx',
+        '--input-type=module',
+        '-e',
+        "import {Store} from './src/store.ts'; new Store(process.env.TEST_DB, 'k'.repeat(32));",
+      ],
+      { encoding: 'utf8', env: { ...process.env, TEST_DB: path } },
+    );
+    assert.notEqual(child.status, 0);
+    assert.match(child.stderr, /single-writer/);
+  } finally {
+    store.close();
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+test('rolls back standalone audit side effects and supports an existing transaction', () => {
+  const store = new Store(':memory:', key);
+  try {
+    store.db.exec(
+      "CREATE TRIGGER fail_audit BEFORE INSERT ON audit BEGIN INSERT INTO runs VALUES('probe','sandbox','{}'); SELECT RAISE(FAIL,'attack'); END",
+    );
+    assert.throws(() => store.audit('sandbox', 'a', 'test', 'allowed'), /attack/);
+    assert.equal((store.db.prepare('SELECT count(*) AS n FROM runs').get() as { n: number }).n, 0);
+    store.db.exec('DROP TRIGGER fail_audit');
+    store.transaction(() => store.audit('sandbox', 'a', 'valid', 'allowed'));
+    assert.equal(store.verify(true), true);
+    assert.equal(store.audits('sandbox').length, 1);
+  } finally {
+    store.close();
+  }
+});

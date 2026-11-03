@@ -28,26 +28,34 @@ export class Store {
     if (path !== ':memory:') mkdirSync(dirname(path), { recursive: true, mode: 0o700 });
     process.umask(0o077);
     this.db = new DatabaseSync(path);
-    if (path !== ':memory:') chmodSync(path, 0o600);
-    this.db.exec(`PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000;
+    try {
+      if (path !== ':memory:') chmodSync(path, 0o600);
+      this.db.exec(
+        'PRAGMA busy_timeout=0; PRAGMA journal_mode=WAL; BEGIN IMMEDIATE; COMMIT; PRAGMA locking_mode=EXCLUSIVE; BEGIN EXCLUSIVE; COMMIT;',
+      );
+      this.db.exec(`PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000;
       CREATE TABLE IF NOT EXISTS audit(seq INTEGER PRIMARY KEY, body TEXT NOT NULL, hash TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS approvals(id TEXT PRIMARY KEY, tenant TEXT NOT NULL, subject TEXT NOT NULL, binding TEXT NOT NULL, expires INTEGER NOT NULL, status TEXT NOT NULL, reviewer TEXT);
       CREATE TABLE IF NOT EXISTS revocations(tenant TEXT NOT NULL, kind TEXT NOT NULL, value TEXT NOT NULL, subject TEXT NOT NULL, expires INTEGER NOT NULL, PRIMARY KEY(tenant,kind,value,subject));
       CREATE TABLE IF NOT EXISTS runs(id TEXT PRIMARY KEY, tenant TEXT NOT NULL, body TEXT NOT NULL);
     `);
-    const columns = this.db.prepare('PRAGMA table_info(approvals)').all() as { name: string }[];
-    if (!columns.some((c) => c.name === 'request'))
-      this.transaction(() => {
-        this.db.exec(
-          "ALTER TABLE approvals ADD COLUMN request TEXT NOT NULL DEFAULT '{}'; UPDATE approvals SET status='invalidated' WHERE status IN ('pending','approved');",
-        );
-      });
-    if (!this.verify()) {
+      const columns = this.db.prepare('PRAGMA table_info(approvals)').all() as { name: string }[];
+      if (!columns.some((c) => c.name === 'request'))
+        this.transaction(() => {
+          this.db.exec(
+            "ALTER TABLE approvals ADD COLUMN request TEXT NOT NULL DEFAULT '{}'; UPDATE approvals SET status='invalidated' WHERE status IN ('pending','approved');",
+          );
+        });
+      if (!this.verify(true)) throw new Error('Audit integrity check failed');
+    } catch (e) {
       this.db.close();
-      throw new Error('Audit integrity check failed');
+      if (e instanceof Error && /database is locked/.test(e.message))
+        throw new Error('Database is held by another process: single-writer service');
+      throw e;
     }
   }
   transaction<T>(fn: () => T): T {
+    if (this.db.isTransaction) return fn();
     this.db.exec('BEGIN IMMEDIATE');
     try {
       const value = fn();
@@ -65,23 +73,26 @@ export class Store {
     outcome: string,
     detail: Record<string, unknown> = {},
   ): Audit {
-    const last = this.db.prepare('SELECT seq, hash FROM audit ORDER BY seq DESC LIMIT 1').get() as
-      { seq: number; hash: string } | undefined;
-    const body = {
-      seq: (last?.seq ?? 0) + 1,
-      at: new Date(this.now()).toISOString(),
-      tenant,
-      actor,
-      action,
-      outcome,
-      detail,
-      prev: last?.hash ?? 'genesis',
-    };
-    const hash = createHmac('sha256', this.key).update(canonical(body)).digest('hex');
-    this.db
-      .prepare('INSERT INTO audit(seq,body,hash) VALUES(?,?,?)')
-      .run(body.seq, canonical(body), hash);
-    return { ...body, hash };
+    return this.transaction(() => {
+      const last = this.db
+        .prepare('SELECT seq, hash FROM audit ORDER BY seq DESC LIMIT 1')
+        .get() as { seq: number; hash: string } | undefined;
+      const body = {
+        seq: (last?.seq ?? 0) + 1,
+        at: new Date(this.now()).toISOString(),
+        tenant,
+        actor,
+        action,
+        outcome,
+        detail,
+        prev: last?.hash ?? 'genesis',
+      };
+      const hash = createHmac('sha256', this.key).update(canonical(body)).digest('hex');
+      this.db
+        .prepare('INSERT INTO audit(seq,body,hash) VALUES(?,?,?)')
+        .run(body.seq, canonical(body), hash);
+      return { ...body, hash };
+    });
   }
   verify(full = false): boolean {
     if (this.integrityFailed && !full) return false;
