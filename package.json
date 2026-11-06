@@ -23,7 +23,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.32.2",
-    "fastify": "5.12.7",
+    "fastify": "5.12.8",
     "jose": "6.2.14",
     "zod": "4.6.7"
   },
